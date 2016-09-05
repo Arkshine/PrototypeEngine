@@ -69,5 +69,8 @@ DLLEXPORT void F( void* pv )
 
 DLLEXPORT int Initialize( cl_enginefunc_t *pEnginefuncs, int iVersion )
 {
+	if( !engine::InitCommandLine() )
+		return false;
+
 	return false;
 }

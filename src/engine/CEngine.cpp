@@ -1,3 +1,5 @@
+#include <limits>
+
 #include "Platform.h"
 
 #include "CCommandLine.h"
@@ -19,14 +21,93 @@ ICommandLine* GetCommandLine()
 
 bool CEngine::Run( const bool bIsListenServer )
 {
-	int iArgC;
-	char** ppszArgV;
+	{
+		int iArgC;
+		char** ppszArgV;
 
-	if( !InitCommandLine( iArgC, &ppszArgV ) )
-		return false;
+		if( !InitCommandLine( iArgC, &ppszArgV ) )
+			return false;
 
-	if( !GetCommandLine()->Initialize( iArgC, ppszArgV, true ) )
-		return false;
+		if( !GetCommandLine()->Initialize( iArgC, ppszArgV, true ) )
+			return false;
+	}
+
+	if( bIsListenServer )
+	{
+		//Already done by GoldSource. - Solokiller
+		/*
+		if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
+		{
+			return false;
+		}
+		*/
+
+		//Find the engine's window and make it invisible.
+		m_pEngineWindow = FindEngineWindow();
+
+		if( m_pEngineWindow )
+		{
+			SDL_HideWindow( m_pEngineWindow );
+		}
+
+		Uint32 windowFlags = /*SDL_WINDOW_HIDDEN |*/ SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
+
+		if( GetCommandLine()->GetValue( "-noborder" ) )
+			windowFlags |= SDL_WINDOW_BORDERLESS;
+
+		m_pWindow = SDL_CreateWindow( "Half-Life", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 480, windowFlags );
+
+		if( !m_pWindow )
+			return false;
+
+		SDL_RaiseWindow( m_pWindow );
+	}
+
+	bool bQuit = false;
+
+	SDL_Event event;
+
+	while( !bQuit )
+	{
+		while( SDL_PollEvent( &event ) )
+		{
+			if( event.type == SDL_WINDOWEVENT )
+			{
+				//Close if the main window receives a close request.
+				if( event.window.event == SDL_WINDOWEVENT_CLOSE )
+				{
+					if( SDL_GetWindowID( m_pWindow ) == event.window.windowID )
+					{
+						bQuit = true;
+					}
+				}
+			}
+		}
+	}
+
+	if( bIsListenServer )
+	{
+		if( m_pWindow )
+		{
+			SDL_DestroyWindow( m_pWindow );
+			m_pWindow = nullptr;
+		}
+
+		//SDL_Quit();
+	}
 
 	return true;
+}
+
+SDL_Window* CEngine::FindEngineWindow()
+{
+	for( Uint32 uiID = 0; uiID < std::numeric_limits<Uint32>::max(); ++uiID )
+	{
+		SDL_Window* pWindow = SDL_GetWindowFromID( uiID );
+
+		if( pWindow )
+			return pWindow;
+	}
+
+	return nullptr;
 }

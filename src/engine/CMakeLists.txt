@@ -9,6 +9,7 @@ include_directories(
 	${CMAKE_SOURCE_DIR}/external/HL_SDK/engine
 	${CMAKE_SOURCE_DIR}/external/HL_SDK/public
 	${CMAKE_SOURCE_DIR}/external/HL_SDK/public/math
+	${CMAKE_SOURCE_DIR}/external/SDL2/include
 )
 
 add_sources(
@@ -26,6 +27,23 @@ add_library( Engine SHARED ${PREP_SRCS} )
 
 target_compile_definitions( Engine PRIVATE
 	${SHARED_DEFS}
+)
+
+if( UNIX )
+	if ( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
+		set( SDL2_NAME "libSDL2-2.0.0.dylib" )
+	else()
+		set( SDL2_NAME "libSDL2-2.0.so.0" )
+	endif()
+else()
+	set( SDL2_NAME "${CMAKE_SHARED_LIBRARY_PREFIX}SDL2${CMAKE_STATIC_LIBRARY_SUFFIX}" )
+endif()
+
+find_library( SDL2 ${SDL2_NAME} PATHS ${CMAKE_SOURCE_DIR}/external/SDL2/lib/ "${STEAMCOMMON}/Half-Life/" )
+
+#Link with engine dependencies
+target_link_libraries( Engine 
+	${SDL2}
 )
 
 #CMake places libraries in /Debug or /Release on Windows, so explicitly set the paths for both.

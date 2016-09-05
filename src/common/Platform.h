@@ -118,7 +118,9 @@ inline constexpr size_t _ArraySizeof( const T ( & )[ SIZE ] )
 
 /**
 *	Initializes the command line arguments.
-*	@return Whether the command line arguments where successfully initialized.
+*	@param[ out ] iOutArgC Number of command line arguments.
+*	@param[ out ] pppszArgV Array of command line arguments.
+*	@return Whether the command line arguments were successfully initialized.
 */
 bool InitCommandLine( int& iOutArgC, char*** pppszArgV );
 

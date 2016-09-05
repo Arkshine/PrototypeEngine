@@ -12,6 +12,8 @@ include_directories(
 )
 
 add_sources(
+	CEngine.h
+	CEngine.cpp
 	EngineInterface.h
 	EngineInterface.cpp
 )

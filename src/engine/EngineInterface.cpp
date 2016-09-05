@@ -6,6 +6,8 @@ typedef int HSPRITE;	// handle to a graphic
 #include "const.h"
 #include "APIProxy.h"
 
+#include "CEngine.h"
+
 #include "EngineInterface.h"
 
 DLLEXPORT void* ClientFactory()
@@ -69,8 +71,7 @@ DLLEXPORT void F( void* pv )
 
 DLLEXPORT int Initialize( cl_enginefunc_t *pEnginefuncs, int iVersion )
 {
-	if( !engine::InitCommandLine() )
-		return false;
+	CEngine engine;
 
-	return false;
+	return engine.Run( true );
 }

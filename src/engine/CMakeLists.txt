@@ -39,12 +39,15 @@ set_target_properties( Engine PROPERTIES
 
 if( WIN32 AND MSVC )
 	#Set Windows subsystem
-	set( ENGINE_LINK_FLAGS "/SUBSYSTEM:WINDOWS" )
+	#Add the module definition file. Needed for GiveFnptrsToDll function export.
+	set( ENGINE_LINK_FLAGS "/SUBSYSTEM:WINDOWS /DEF:${CMAKE_CURRENT_SOURCE_DIR}/client.def" )
 else()
 	set( ENGINE_LINK_FLAGS "" )
 endif()
 
-set_target_properties( Engine PROPERTIES COMPILE_FLAGS "${LINUX_32BIT_FLAG}" LINK_FLAGS "${ENGINE_LINK_FLAGS} ${LINUX_32BIT_FLAG}" )
+set_target_properties( Engine 
+	PROPERTIES COMPILE_FLAGS "${LINUX_32BIT_FLAG}" 
+	LINK_FLAGS "${ENGINE_LINK_FLAGS} ${LINUX_32BIT_FLAG}" )
 
 #No lib prefix
 set_target_properties( Engine PROPERTIES PREFIX "" )

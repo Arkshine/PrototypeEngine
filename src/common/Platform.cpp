@@ -6,6 +6,11 @@
 #include <codecvt>
 #endif
 
+#ifdef LINUX
+#include <fstream>
+#include <vector>
+#endif
+
 namespace
 {
 static const int ARGC_UNINITIALIZED = -1;
@@ -69,6 +74,52 @@ bool InitCommandLine()
 		}
 
 		LocalFree( ppszArgV );
+	}
+
+	return true;
+}
+}
+#endif
+
+#ifdef LINUX
+namespace engine
+{
+bool InitCommandLine()
+{
+	//If it was already processed once, return cached values without reprocessing. - Solokiller
+	if( argc == ARGC_UNINITIALIZED )
+	{
+		//Read the command line from this special file.
+		std::ifstream file( "/proc/self/cmdline", std::ios::in );
+
+		if( !file.is_open() )
+			return false;
+
+		std::string szLine;
+
+		std::vector<std::string> vecArgs;
+
+		//Command line is a series of null terminated strings.
+		while( std::getline( file, szLine, '\0' ) )
+		{
+			vecArgs.emplace_back( std::move( szLine ) );
+		}
+
+		//Convert to argv vector.
+		argc = vecArgs.size();
+
+		argv = new char*[ argc ];
+
+		int iArg = 0;
+
+		for( const auto& szArg : vecArgs )
+		{
+			argv[ iArg ] = new char[ szArg.length() ];
+
+			strcpy( argv[ iArg ], szArg.c_str() );
+
+			++iArg;
+		}
 	}
 
 	return true;

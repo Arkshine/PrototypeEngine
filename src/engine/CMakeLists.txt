@@ -22,6 +22,10 @@ preprocess_sources()
 
 add_library( Engine SHARED ${PREP_SRCS} )
 
+target_compile_definitions( Engine PRIVATE
+	${SHARED_DEFS}
+)
+
 #CMake places libraries in /Debug or /Release on Windows, so explicitly set the paths for both.
 #On Linux, it uses LIBRARY_OUTPUT_DIRECTORY
 #The engine is always in cl_dlls, since the client is always loaded from there, while liblist.gam points to it to match files.
@@ -41,11 +45,11 @@ endif()
 set_target_properties( Engine PROPERTIES COMPILE_FLAGS "${LINUX_32BIT_FLAG}" LINK_FLAGS "${ENGINE_LINK_FLAGS} ${LINUX_32BIT_FLAG}" )
 
 #No lib prefix
-SET_TARGET_PROPERTIES( Engine PROPERTIES PREFIX "" )
+set_target_properties( Engine PROPERTIES PREFIX "" )
 
 #Needs to be named client so the original engine can load it.
 #TODO: make a library that acts as a thunk to the real engine library.
-SET_TARGET_PROPERTIES( Engine PROPERTIES OUTPUT_NAME "client" )
+set_target_properties( Engine PROPERTIES OUTPUT_NAME "client" )
 
 #Create filters
 create_source_groups( "${CMAKE_SOURCE_DIR}" )

@@ -116,25 +116,10 @@ inline constexpr size_t _ArraySizeof( const T ( & )[ SIZE ] )
 */
 #define OFFSETOF( type, member ) ( ( size_t ) ( &reinterpret_cast<type*>( 100000 )->member ) - 100000 )
 
-namespace engine
-{
-/**
-*	The number of command line arguments.
-*/
-extern int argc;
-
-/**
-*	Command line arguments vector.
-*/
-extern char** argv;
-
-extern char* commandline;
-
 /**
 *	Initializes the command line arguments.
 *	@return Whether the command line arguments where successfully initialized.
 */
-bool InitCommandLine();
-}
+bool InitCommandLine( int& iOutArgC, char*** pppszArgV );
 
 #endif //COMMON_PLATFORM_H

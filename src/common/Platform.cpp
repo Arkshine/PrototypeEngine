@@ -1,6 +1,10 @@
 //TODO: make one header that includes the platform headers - Solokiller
 #include "Platform.h"
 
+#include <cctype>
+#include <cstring>
+#include <sstream>
+
 #ifdef WIN32
 #include "Shellapi.h"
 #include <codecvt>
@@ -20,6 +24,63 @@ namespace engine
 {
 int argc = ARGC_UNINITIALIZED;
 char** argv = nullptr;
+char* commandline = nullptr;
+}
+
+namespace
+{
+//Recreates the command line from argv. - Solokiller
+static void RecreateCommandline()
+{
+	if( !engine::commandline )
+	{
+		std::stringstream stream;
+
+		for( int iArg = 0; iArg < engine::argc; ++iArg )
+		{
+			const char* pszArg = engine::argv[ iArg ];
+
+			//TODO: refactor into function. - Solokiller
+			const bool bHasWhitespace = []( const char* pszString ) -> bool
+			{
+				while( *pszString )
+				{
+					if( isspace( *pszString ) )
+						return true;
+
+					++pszString;
+				}
+
+				return false;
+			}( pszArg );
+
+			if( bHasWhitespace )
+			{
+				stream << '\"';
+			}
+
+			stream << pszArg;
+
+			if( bHasWhitespace )
+			{
+				stream << '\"';
+			}
+
+			stream << ' ';
+		}
+
+		std::string szCommandline = stream.str();
+
+		//The last character will be a space unless there were no commandline arguments, so don't copy that. - Solokiller
+		const size_t uiLength = !szCommandline.empty() ? szCommandline.length() : 1;
+
+		engine::commandline = new char[ uiLength ];
+
+		strncpy( engine::commandline, szCommandline.c_str(), uiLength );
+
+		engine::commandline[ uiLength - 1 ] = '\0';
+	}
+}
 }
 
 #ifdef _WIN32
@@ -74,6 +135,8 @@ bool InitCommandLine()
 		}
 
 		LocalFree( ppszArgV );
+
+		RecreateCommandline();
 	}
 
 	return true;
@@ -114,12 +177,14 @@ bool InitCommandLine()
 
 		for( const auto& szArg : vecArgs )
 		{
-			argv[ iArg ] = new char[ szArg.length() ];
+			argv[ iArg ] = new char[ szArg.length() + 1 ];
 
 			strcpy( argv[ iArg ], szArg.c_str() );
 
 			++iArg;
 		}
+
+		RecreateCommandline();
 	}
 
 	return true;

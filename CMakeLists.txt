@@ -168,6 +168,11 @@ if( "${STEAMCOMMON}" STREQUAL "" )
 
 endif()
 
+#Base dir for game outputs
+set( GAME_BASE_PATH "${STEAMCOMMON}/Half-Life/goldsource2" )
+
+MESSAGE( STATUS "Base Game Path: ${GAME_BASE_PATH}" )
+
 #Shared preprocessor definitions
 set( SHARED_DEFS 
 )
@@ -193,3 +198,7 @@ endif()
 
 #C++14 support
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y" )
+
+project( GoldSource2 )
+
+add_subdirectory( src )

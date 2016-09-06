@@ -15,11 +15,14 @@ include_directories(
 add_sources(
 	CEngine.h
 	CEngine.cpp
+	Engine.h
+	Engine.cpp
 	EngineInterface.h
 	EngineInterface.cpp
 )
 
 add_subdirectory( ${CMAKE_SOURCE_DIR}/src/common common )
+add_subdirectory( console )
 
 preprocess_sources()
 

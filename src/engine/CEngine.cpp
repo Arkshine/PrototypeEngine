@@ -6,6 +6,10 @@
 
 #include "Common.h"
 
+#include "Logging.h"
+
+#include "CNetworkBuffer.h"
+
 #include "CEngine.h"
 
 namespace
@@ -70,26 +74,33 @@ bool CEngine::RunEngine( const bool bIsListenServer )
 		SDL_RaiseWindow( m_pWindow );
 	}
 
-	bool bQuit = false;
-
-	SDL_Event event;
-
-	while( !bQuit )
+	if( HostInit() )
 	{
-		while( SDL_PollEvent( &event ) )
+		bool bQuit = false;
+
+		SDL_Event event;
+
+		while( !bQuit )
 		{
-			if( event.type == SDL_WINDOWEVENT )
+			while( SDL_PollEvent( &event ) )
 			{
-				//Close if the main window receives a close request.
-				if( event.window.event == SDL_WINDOWEVENT_CLOSE )
+				if( event.type == SDL_WINDOWEVENT )
 				{
-					if( SDL_GetWindowID( m_pWindow ) == event.window.windowID )
+					//Close if the main window receives a close request.
+					if( event.window.event == SDL_WINDOWEVENT_CLOSE )
 					{
-						bQuit = true;
+						if( SDL_GetWindowID( m_pWindow ) == event.window.windowID )
+						{
+							bQuit = true;
+						}
 					}
 				}
 			}
 		}
+	}
+	else
+	{
+		UTIL_ShowMessageBox( "Error initializing host", "Fatal Error", LogType::ERROR );
 	}
 
 	if( bIsListenServer )
@@ -117,4 +128,11 @@ SDL_Window* CEngine::FindEngineWindow()
 	}
 
 	return nullptr;
+}
+
+bool CEngine::HostInit()
+{
+	CNetworkBuffer::InitMasks();
+
+	return true;
 }

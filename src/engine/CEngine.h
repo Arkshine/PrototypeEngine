@@ -13,8 +13,9 @@ public:
 private:
 	bool RunEngine( const bool bIsListenServer );
 
-private:
 	static SDL_Window* FindEngineWindow();
+
+	bool HostInit();
 
 private:
 	SDL_Window* m_pEngineWindow = nullptr;

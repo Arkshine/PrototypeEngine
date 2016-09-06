@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdio>
+#include <utility>
 
 #include "CNetworkBuffer.h"
 
@@ -295,6 +296,21 @@ bool CNetworkBuffer::BackUpBits( const size_t uiBits )
 bool CNetworkBuffer::BackUpBytes( const size_t uiBytes )
 {
 	return BackUpBits( ByteBit( uiBytes ) );
+}
+
+void CNetworkBuffer::EraseBytes( size_t uiStart, size_t uiCount )
+{
+	if( uiStart >= GetBytesInBuffer() )
+		return;
+
+	if( uiStart + uiCount >= GetBytesInBuffer() )
+	{
+		uiCount = GetBytesInBuffer() - uiStart;
+	}
+
+	memmove( m_pData + uiStart, m_pData + uiStart + uiCount, GetBytesInBuffer() - ( uiStart + uiCount ) );
+
+	m_uiCurrentBit -= ByteBit( uiStart + uiCount );
 }
 
 int CNetworkBuffer::ReadOneBit()

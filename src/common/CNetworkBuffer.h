@@ -299,6 +299,13 @@ public:
 	*/
 	bool BackUpBytes( const size_t uiBytes );
 
+	/**
+	*	Erases a chunk of bytes from the buffer.
+	*	@param uiStart Starting byte.
+	*	@param uiCount Number of bytes to erase.
+	*/
+	void EraseBytes( size_t uiStart, size_t uiCount );
+
 	/*
 	*	Read methods
 	*/

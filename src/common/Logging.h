@@ -14,4 +14,6 @@ void UTIL_ShowMessageBox( const char* const pszMessage, const char* const pszCap
 
 void Msg( const char* const pszFormat, ... );
 
+void Warning( const char* const pszFormat, ... );
+
 #endif //COMMON_LOGGING_H

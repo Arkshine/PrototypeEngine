@@ -35,3 +35,19 @@ void Msg( const char* const pszFormat, ... )
 	//Log to stdout for now. - Solokiller
 	printf( "%s", szBuffer );
 }
+
+void Warning( const char* const pszFormat, ... )
+{
+	char szBuffer[ 4096 ];
+
+	va_list list;
+
+	va_start( list, pszFormat );
+
+	const int iResult = vsnprintf( szBuffer, sizeof( szBuffer ), pszFormat, list );
+
+	va_end( list );
+
+	//Log to stdout for now. - Solokiller
+	printf( "Warning: %s", szBuffer );
+}

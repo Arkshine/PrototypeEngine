@@ -100,7 +100,7 @@ bool CEngine::RunEngine( const bool bIsListenServer )
 			m_pWindow = nullptr;
 		}
 
-		//SDL_Quit();
+		SDL_Quit();
 	}
 
 	return true;

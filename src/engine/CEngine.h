@@ -8,7 +8,10 @@ class CEngine final
 public:
 	CEngine() = default;
 
-	bool Run( const bool bIsListenServer );
+	void Run( const bool bIsListenServer );
+
+private:
+	bool RunEngine( const bool bIsListenServer );
 
 private:
 	static SDL_Window* FindEngineWindow();

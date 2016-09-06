@@ -78,7 +78,9 @@ int DLLEXPORT Initialize( cl_enginefunc_t *pEnginefuncs, int iVersion )
 {
 	CEngine engine;
 
-	return engine.Run( true );
+	engine.Run( true );
+
+	return false;
 }
 
 extern "C"
@@ -88,7 +90,5 @@ void GIVEFNPTRS_DLLEXPORT GiveFnptrsToDll( enginefuncs_t* pengfuncsFromEngine, g
 	CEngine engine;
 
 	engine.Run( false );
-
-	pengfuncsFromEngine->pfnServerCommand( "quit\n" );
 }
 }

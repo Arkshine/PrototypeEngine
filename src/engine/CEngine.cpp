@@ -19,7 +19,14 @@ ICommandLine* GetCommandLine()
 	return &g_CommandLine;
 }
 
-bool CEngine::Run( const bool bIsListenServer )
+void CEngine::Run( const bool bIsListenServer )
+{
+	const bool bResult = RunEngine( bIsListenServer );
+
+	exit( bResult ? EXIT_SUCCESS : EXIT_FAILURE );
+}
+
+bool CEngine::RunEngine( const bool bIsListenServer )
 {
 	{
 		int iArgC;

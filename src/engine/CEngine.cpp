@@ -4,11 +4,10 @@
 
 #include "CCommandLine.h"
 
-#include "Common.h"
-
-#include "Logging.h"
-
 #include "CNetworkBuffer.h"
+#include "Common.h"
+#include "Engine.h"
+#include "Logging.h"
 
 #include "CEngine.h"
 
@@ -43,6 +42,10 @@ bool CEngine::RunEngine( const bool bIsListenServer )
 			return false;
 	}
 
+	//TODO: until we can draw the console onscreen, use a console window. - Solokiller
+	AllocConsole();
+	freopen( "CONOUT$", "w", stdout );
+
 	if( bIsListenServer )
 	{
 		//Already done by GoldSource. - Solokiller
@@ -73,6 +76,8 @@ bool CEngine::RunEngine( const bool bIsListenServer )
 
 		SDL_RaiseWindow( m_pWindow );
 	}
+
+	Msg( "HostInit\n" );
 
 	if( HostInit() )
 	{
@@ -133,6 +138,9 @@ SDL_Window* CEngine::FindEngineWindow()
 bool CEngine::HostInit()
 {
 	CNetworkBuffer::InitMasks();
+
+	if( !g_CommandBuffer.Initialize() )
+		return false;
 
 	return true;
 }

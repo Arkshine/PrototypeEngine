@@ -5,6 +5,11 @@
 
 #include "CNetworkBuffer.h"
 
+namespace cvar
+{
+class CCVarSystem;
+}
+
 /**
 *	Represents the command buffer. Commands entered in the console, as well as key presses are all processed by this.
 */
@@ -18,9 +23,10 @@ public:
 
 	/**
 	*	Initializes the buffer.
+	*	@param pCVar CVar system to use.
 	*	@return Whether the buffer initialized successfully.
 	*/
-	bool Initialize();
+	bool Initialize( cvar::CCVarSystem* pCVar );
 
 	/**
 	*	Adds text to the command buffer.
@@ -61,6 +67,8 @@ private:
 	uint8_t m_Data[ BUFFER_SIZE ];
 
 	bool m_bWait = false;
+
+	cvar::CCVarSystem* m_pCVar = nullptr;
 
 private:
 	CCommandBuffer( const CCommandBuffer& ) = delete;

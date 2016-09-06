@@ -2,11 +2,15 @@
 
 #include "Logging.h"
 
+#include "console/CCVarSystem.h"
+
 #include "CCommandBuffer.h"
 
-bool CCommandBuffer::Initialize()
+bool CCommandBuffer::Initialize( cvar::CCVarSystem* pCVar )
 {
 	m_Buffer.SetBuffer( "CommandBuffer", m_Data, sizeof( m_Data ) );
+
+	m_pCVar = pCVar;
 
 	return true;
 }
@@ -108,8 +112,7 @@ bool CCommandBuffer::Execute()
 		}
 
 		//Execute the command line.
-		//TODO
-		//m_pCVar->ExecuteString( szLine, cvar::Source::Command );
+		m_pCVar->ExecuteString( szLine, cvar::Source::COMMAND );
 
 		if( m_bWait )
 		{

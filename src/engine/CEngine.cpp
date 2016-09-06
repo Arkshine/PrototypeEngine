@@ -139,7 +139,10 @@ bool CEngine::HostInit()
 {
 	CNetworkBuffer::InitMasks();
 
-	if( !g_CommandBuffer.Initialize() )
+	if( !g_CVar.Initialize() )
+		return false;
+
+	if( !g_CommandBuffer.Initialize( &g_CVar ) )
 		return false;
 
 	return true;

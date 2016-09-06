@@ -29,9 +29,7 @@
 typedef struct cvar_s
 {
 	const char* pszName;
-	//Note: the engine treats this as a non-const pointer. It's const here to silence compiler warnings.
-	//As an added benefit, game code can't just modify the strings. - Solokiller
-	const char*	string;
+	char*		string;
 	int			flags;
 	float		value;
 	struct cvar_s *next;

@@ -24,6 +24,32 @@ void CEngine::Run( const bool bIsListenServer )
 
 bool CEngine::RunEngine( const bool bIsListenServer )
 {
+	if( !( *m_szMyGameDir ) )
+	{
+		UTIL_ShowMessageBox( "No game directory set", "Error", LogType::ERROR );
+		return false;
+	}
+
+	//Set the working directory to the game directory that the engine is running in.
+	//Needed so asset loading works. Note that any mods that rely on ./valve to exist will break. - Solokiller
+	//TODO: Consider adding symlinks or requiring the copying of assets to game directories. Windows won't allow it when targeting XP.
+	{
+
+		m_OldCWD = std::experimental::filesystem::current_path();
+
+		const std::string szPath = std::string( "./" ) + m_szMyGameDir;
+
+		std::error_code error;
+
+		std::experimental::filesystem::current_path( std::experimental::filesystem::path( szPath ), error );
+
+		if( error )
+		{
+			UTIL_ShowMessageBox( ( std::string( "Error while setting current working directory \"" ) + szPath + "\": " + error.message() ).c_str(), "Error", LogType::ERROR );
+			return false;
+		}
+	}
+
 	{
 		int iArgC;
 		char** ppszArgV;

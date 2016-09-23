@@ -1,6 +1,8 @@
 #ifndef ENGINE_CENGINE_H
 #define ENGINE_CENGINE_H
 
+#include <filesystem>
+
 #include <SDL2/SDL.h>
 
 #include "Platform.h"
@@ -29,6 +31,8 @@ private:
 
 private:
 	char m_szMyGameDir[ MAX_PATH ] = {};
+
+	std::experimental::filesystem::path m_OldCWD;
 
 	SDL_Window* m_pEngineWindow = nullptr;
 	SDL_Window* m_pWindow = nullptr;

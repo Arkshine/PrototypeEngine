@@ -11,7 +11,7 @@ typedef struct globalvars_s globalvars_t;
 #include "APIProxy.h"
 #include "eiface.h"
 
-#include "CEngine.h"
+#include "Engine.h"
 
 #include "EngineInterface.h"
 
@@ -76,9 +76,9 @@ void DLLEXPORT F( void* pv )
 
 int DLLEXPORT Initialize( cl_enginefunc_t *pEnginefuncs, int iVersion )
 {
-	CEngine engine;
+	g_Engine.SetMyGameDir( pEnginefuncs->pfnGetGameDirectory() );
 
-	engine.Run( true );
+	g_Engine.Run( true );
 
 	return false;
 }
@@ -87,8 +87,52 @@ extern "C"
 {
 void GIVEFNPTRS_DLLEXPORT GiveFnptrsToDll( enginefuncs_t* pengfuncsFromEngine, globalvars_t* pGlobals )
 {
-	CEngine engine;
+	{
+		char szGameDir[ MAX_PATH ];
 
-	engine.Run( false );
+		pengfuncsFromEngine->pfnGetGameDir( szGameDir );
+
+		g_Engine.SetMyGameDir( szGameDir );
+	}
+
+	g_Engine.Run( false );
 }
 }
+
+#ifdef WIN32
+//See post VS 2015 update 3 delayimp.h for the reason why this has to be defined. - Solokiller
+#define DELAYIMP_INSECURE_WRITABLE_HOOKS
+#include <delayimp.h>
+
+FARPROC WINAPI DelayHook(
+	unsigned        dliNotify,
+	PDelayLoadInfo  pdli
+)
+{
+	if( dliNotify == dliNotePreLoadLibrary )
+	{
+		if( strcmp( pdli->szDll, "Tier1.dll" ) == 0 )
+		{
+			char szPath[ MAX_PATH ];
+
+			if( !( *g_Engine.GetMyGameDir() ) )
+				return nullptr;
+
+			const int iResult = snprintf( szPath, sizeof( szPath ), "%s/%s", g_Engine.GetMyGameDir(), pdli->szDll );
+
+			if( iResult < 0 || static_cast<size_t>( iResult ) >= sizeof( szPath ) )
+				return nullptr;
+
+			HMODULE hLib = LoadLibraryA( szPath );
+
+			return ( FARPROC ) hLib;
+		}
+	}
+
+	return nullptr;
+}
+
+ExternC PfnDliHook __pfnDliNotifyHook2 = DelayHook;
+
+ExternC PfnDliHook   __pfnDliFailureHook2 = nullptr;
+#endif

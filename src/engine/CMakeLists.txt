@@ -5,6 +5,7 @@
 include_directories(
 	${CMAKE_SOURCE_DIR}/src/common
 	${CMAKE_SOURCE_DIR}/src/engine
+	${CMAKE_SOURCE_DIR}/src
 	${CMAKE_SOURCE_DIR}/external/HL_SDK/common
 	${CMAKE_SOURCE_DIR}/external/HL_SDK/engine
 	${CMAKE_SOURCE_DIR}/external/HL_SDK/public
@@ -47,6 +48,7 @@ find_library( SDL2 ${SDL2_NAME} PATHS ${CMAKE_SOURCE_DIR}/external/SDL2/lib/ "${
 #Link with engine dependencies
 target_link_libraries( Engine 
 	${SDL2}
+	Tier1
 )
 
 #CMake places libraries in /Debug or /Release on Windows, so explicitly set the paths for both.
@@ -61,7 +63,7 @@ set_target_properties( Engine PROPERTIES
 if( WIN32 AND MSVC )
 	#Set Windows subsystem
 	#Add the module definition file. Needed for GiveFnptrsToDll function export.
-	set( ENGINE_LINK_FLAGS "/SUBSYSTEM:WINDOWS /DEF:${CMAKE_CURRENT_SOURCE_DIR}/client.def" )
+	set( ENGINE_LINK_FLAGS "/SUBSYSTEM:WINDOWS /DEF:${CMAKE_CURRENT_SOURCE_DIR}/client.def /DELAYLOAD:Tier1.dll" )
 else()
 	set( ENGINE_LINK_FLAGS "" )
 endif()

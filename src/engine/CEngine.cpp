@@ -2,8 +2,6 @@
 
 #include "Platform.h"
 
-#include "CCommandLine.h"
-
 #include "CNetworkBuffer.h"
 #include "Common.h"
 #include "Engine.h"
@@ -11,15 +9,10 @@
 
 #include "CEngine.h"
 
-namespace
+void CEngine::SetMyGameDir( const char* const pszGameDir )
 {
-static CCommandLine g_CommandLine;
-}
-
-//TODO: should be moved. - Solokiller
-ICommandLine* GetCommandLine()
-{
-	return &g_CommandLine;
+	strncpy( m_szMyGameDir, pszGameDir, sizeof( m_szMyGameDir ) );
+	m_szMyGameDir[ sizeof( m_szMyGameDir ) - 1 ] = '\0';
 }
 
 void CEngine::Run( const bool bIsListenServer )

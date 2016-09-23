@@ -3,10 +3,20 @@
 
 #include <SDL2/SDL.h>
 
+#include "Platform.h"
+
 class CEngine final
 {
 public:
 	CEngine() = default;
+
+	/**
+	*	Gets the game directory that the engine mod is in.
+	*	This is essentially the working directory for the game directory.
+	*/
+	const char* GetMyGameDir() const { return m_szMyGameDir; }
+
+	void SetMyGameDir( const char* const pszGameDir );
 
 	void Run( const bool bIsListenServer );
 
@@ -18,6 +28,8 @@ private:
 	bool HostInit();
 
 private:
+	char m_szMyGameDir[ MAX_PATH ] = {};
+
 	SDL_Window* m_pEngineWindow = nullptr;
 	SDL_Window* m_pWindow = nullptr;
 

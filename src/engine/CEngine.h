@@ -37,6 +37,8 @@ private:
 	SDL_Window* m_pEngineWindow = nullptr;
 	SDL_Window* m_pWindow = nullptr;
 
+	SDL_GLContext m_hGLContext = nullptr;
+
 private:
 	CEngine( const CEngine& ) = delete;
 	CEngine& operator=( const CEngine& ) = delete;

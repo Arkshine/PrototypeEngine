@@ -28,6 +28,9 @@ add_sources(
 	Engine.cpp
 	EngineInterface.h
 	EngineInterface.cpp
+	#TODO: needs to be somewhere else. - Solokiller
+	GLUtils.h
+	GLUtils.cpp
 )
 
 add_subdirectory( ${CMAKE_SOURCE_DIR}/src/common common )

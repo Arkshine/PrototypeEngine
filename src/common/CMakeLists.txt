@@ -11,3 +11,5 @@ add_sources(
 	Tokenization.h
 	Tokenization.cpp
 )
+
+add_subdirectory( lib )

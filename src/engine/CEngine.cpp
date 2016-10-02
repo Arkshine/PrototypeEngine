@@ -86,41 +86,8 @@ bool CEngine::RunEngine( const bool bIsListenServer )
 			SDL_HideWindow( m_pEngineWindow );
 		}
 
-		Uint32 windowFlags = /*SDL_WINDOW_HIDDEN |*/ SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
-
-		if( GetCommandLine()->GetValue( "-noborder" ) )
-			windowFlags |= SDL_WINDOW_BORDERLESS;
-
-		//OpenGL 2.0 or newer. Shader support. - Solokiller
-		const int iGLMajor = 2;
-		const int iGLMinor = 0;
-
-		Msg( "Requested OpenGL version: %d.%d\n", iGLMajor, iGLMinor );
-
-		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, iGLMajor );
-		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, iGLMinor );
-
-		m_pWindow = SDL_CreateWindow( "Half-Life", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 480, windowFlags );
-
-		if( !m_pWindow )
+		if( !CreateGameWindow() )
 			return false;
-
-		SDL_RaiseWindow( m_pWindow );
-
-		m_hGLContext = SDL_GL_CreateContext( m_pWindow );
-
-		if( !m_hGLContext )
-		{
-			Msg( "Couldn't create OpenGL context\n" );
-			return false;
-		}
-
-		uint32_t uiMajor, uiMinor;
-
-		if( !gl::GetContextVersion( uiMajor, uiMinor ) )
-			return false;
-
-		Msg( "OpenGL context version: %u.%u\n", uiMajor, uiMinor );
 	}
 
 	Msg( "HostInit\n" );
@@ -179,6 +146,47 @@ SDL_Window* CEngine::FindEngineWindow()
 	}
 
 	return nullptr;
+}
+
+bool CEngine::CreateGameWindow()
+{
+	Uint32 windowFlags = /*SDL_WINDOW_HIDDEN |*/ SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
+
+	if( GetCommandLine()->GetValue( "-noborder" ) )
+		windowFlags |= SDL_WINDOW_BORDERLESS;
+
+	//OpenGL 2.0 or newer. Shader support. - Solokiller
+	const int iGLMajor = 2;
+	const int iGLMinor = 0;
+
+	Msg( "Requested OpenGL version: %d.%d\n", iGLMajor, iGLMinor );
+
+	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, iGLMajor );
+	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, iGLMinor );
+
+	m_pWindow = SDL_CreateWindow( "Half-Life", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 480, windowFlags );
+
+	if( !m_pWindow )
+		return false;
+
+	SDL_RaiseWindow( m_pWindow );
+
+	m_hGLContext = SDL_GL_CreateContext( m_pWindow );
+
+	if( !m_hGLContext )
+	{
+		Msg( "Couldn't create OpenGL context\n" );
+		return false;
+	}
+
+	uint32_t uiMajor, uiMinor;
+
+	if( !gl::GetContextVersion( uiMajor, uiMinor ) )
+		return false;
+
+	Msg( "OpenGL context version: %u.%u\n", uiMajor, uiMinor );
+
+	return true;
 }
 
 bool CEngine::HostInit()

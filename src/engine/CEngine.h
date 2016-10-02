@@ -27,6 +27,8 @@ private:
 
 	static SDL_Window* FindEngineWindow();
 
+	bool CreateGameWindow();
+
 	bool HostInit();
 
 private:

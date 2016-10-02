@@ -1,0 +1,29 @@
+add_sources(
+	isteamapplist.h
+	isteamapps.h
+	isteamclient.h
+	isteamcontroller.h
+	isteamfriends.h
+	isteamgameserver.h
+	isteamgameserverstats.h
+	isteamhtmlsurface.h
+	isteamhttp.h
+	isteammatchmaking.h
+	isteammusic.h
+	isteammusicremote.h
+	isteamnetworking.h
+	isteamremotestorage.h
+	isteamscreenshots.h
+	isteamugc.h
+	isteamunifiedmessages.h
+	isteamuser.h
+	isteamuserstats.h
+	isteamutils.h
+	matchmakingtypes.h
+	steam_api.h
+	steam_gameserver.h
+	steamclientpublic.h
+	steamhttpenums.h
+	steamtypes.h
+	steamuniverse.h
+)

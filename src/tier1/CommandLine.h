@@ -3,7 +3,7 @@
 
 /**
 *	@file
-*	Contains the export command line getter function.
+*	Contains the exported command line getter function.
 */
 
 #include "Tier1.h"

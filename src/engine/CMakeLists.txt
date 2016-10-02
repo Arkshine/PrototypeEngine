@@ -2,6 +2,12 @@
 #	Engine library
 #
 
+find_package( OpenGL REQUIRED )
+
+if( NOT OPENGL_FOUND )
+	MESSAGE( FATAL_ERROR "Could not locate OpenGL library" )
+endif()
+
 include_directories(
 	${CMAKE_SOURCE_DIR}/src/common
 	${CMAKE_SOURCE_DIR}/src/engine
@@ -11,6 +17,8 @@ include_directories(
 	${CMAKE_SOURCE_DIR}/external/HL_SDK/public
 	${CMAKE_SOURCE_DIR}/external/HL_SDK/public/math
 	${CMAKE_SOURCE_DIR}/external/SDL2/include
+	${CMAKE_SOURCE_DIR}/external/GLEW/include
+	${OPENGL_INCLUDE_DIR}
 )
 
 add_sources(
@@ -45,9 +53,13 @@ endif()
 
 find_library( SDL2 ${SDL2_NAME} PATHS ${CMAKE_SOURCE_DIR}/external/SDL2/lib/ "${STEAMCOMMON}/Half-Life/" )
 
+find_library( GLEW2 glew32s PATHS ${CMAKE_SOURCE_DIR}/external/GLEW/lib/ )
+
 #Link with engine dependencies
 target_link_libraries( Engine 
 	${SDL2}
+	${GLEW2}
+	${OPENGL_LIBRARIES}
 	Tier1
 )
 

@@ -9,6 +9,7 @@
 #include "Engine.h"
 #include "GLUtils.h"
 #include "Logging.h"
+#include "SteamWrapper.h"
 
 #include "CEngine.h"
 
@@ -32,6 +33,10 @@ bool CEngine::RunEngine( const bool bIsListenServer )
 		UTIL_ShowMessageBox( "No game directory set", "Error", LogType::ERROR );
 		return false;
 	}
+
+	//Must be done before setting the working directory to prevent library load failure. - Solokiller
+	if( !Steam_InitWrappers() )
+		return false;
 
 	//Set the working directory to the game directory that the engine is running in.
 	//Needed so asset loading works. Note that any mods that rely on ./valve to exist will break. - Solokiller

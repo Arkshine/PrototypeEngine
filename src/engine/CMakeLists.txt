@@ -18,6 +18,7 @@ include_directories(
 	${CMAKE_SOURCE_DIR}/external/HL_SDK/public/math
 	${CMAKE_SOURCE_DIR}/external/SDL2/include
 	${CMAKE_SOURCE_DIR}/external/GLEW/include
+	${CMAKE_SOURCE_DIR}/external/SOURCE_SDK/src/public/steam
 	${OPENGL_INCLUDE_DIR}
 )
 
@@ -31,8 +32,11 @@ add_sources(
 	#TODO: needs to be somewhere else. - Solokiller
 	GLUtils.h
 	GLUtils.cpp
+	SteamWrapper.h
+	SteamWrapper.cpp
 )
 
+add_subdirectory( ${CMAKE_SOURCE_DIR}/external/SOURCE_SDK/src/public/steam public/steam )
 add_subdirectory( ${CMAKE_SOURCE_DIR}/src/common common )
 add_subdirectory( console )
 
@@ -42,6 +46,7 @@ add_library( Engine SHARED ${PREP_SRCS} )
 
 target_compile_definitions( Engine PRIVATE
 	${SHARED_DEFS}
+	STEAM_API_NODLL
 )
 
 if( UNIX )

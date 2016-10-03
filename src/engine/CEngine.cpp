@@ -1,3 +1,4 @@
+#include <cmath>
 #include <limits>
 
 #include <gl/glew.h>
@@ -281,8 +282,8 @@ void CEngine::CreateMainMenuBackground()
 
 	const float flXScale = m_iWidth / 800.0f;
 	const float flYScale = m_iHeight / 600.0f;
-	const int iXOffsetScale = static_cast<int>( 256 * flXScale );
-	const int iYOffsetScale = static_cast<int>( 256 * flYScale );
+	const int iXOffsetScale = static_cast<int>( ceil( 256 * flXScale ) );
+	const int iYOffsetScale = static_cast<int>( ceil( 256 * flYScale ) );
 
 	char szFileName[ MAX_PATH ];
 

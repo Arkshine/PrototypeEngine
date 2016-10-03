@@ -53,8 +53,8 @@ private:
 
 	std::experimental::filesystem::path m_OldCWD;
 
-	unsigned int m_iWidth = 1680;
-	unsigned int m_iHeight = 1050;
+	unsigned int m_iWidth = 640;
+	unsigned int m_iHeight = 480;
 
 	float m_flXScale = 1;
 	float m_flYScale = 1;

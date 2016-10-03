@@ -1,5 +1,7 @@
 #include <SDL2/SDL.h>
 
+#include <VGUI_Panel.h>
+
 #include "Engine.h"
 
 #include "CVGUI1Surface.h"
@@ -136,10 +138,40 @@ void CVGUI1Surface::swapBuffers()
 
 void CVGUI1Surface::pushMakeCurrent( vgui::Panel* panel, bool useInsets )
 {
+	glMatrixMode( GL_MODELVIEW );
+
+	glPushMatrix();
+
+	glLoadIdentity();
+
+	int x, y;
+
+	panel->getPos( x, y );
+
+	int iXOffset = x;
+	int iYOffset = y;
+
+	if( useInsets )
+	{
+		int iXInset, iYInset, iX2, iY2;
+
+		panel->getInset( iXInset, iYInset, iX2, iY2 );
+
+		iXOffset += iXInset;
+		iYOffset += iYInset;
+	}
+
+	glTranslatef( 
+		static_cast<float>( iXOffset ), 
+		static_cast<float>( iYOffset ), 
+		0 );
 }
 
 void CVGUI1Surface::popMakeCurrent( vgui::Panel* panel )
 {
+	glMatrixMode( GL_MODELVIEW );
+
+	glPopMatrix();
 }
 
 void CVGUI1Surface::applyChanges()

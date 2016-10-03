@@ -23,6 +23,8 @@ public:
 	*/
 	const char* GetMyGameDir() const { return m_szMyGameDir; }
 
+	SDL_Window* GetWindow() { return m_pWindow; }
+
 	void SetMyGameDir( const char* const pszGameDir );
 
 	void Run( const bool bIsListenServer );

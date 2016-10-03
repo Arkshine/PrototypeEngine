@@ -4,6 +4,8 @@
 
 #include <VGUI_App.h>
 #include <VGUI_Panel.h>
+#include <VGUI_BitmapTGA.h>
+#include <VGUI_ImagePanel.h>
 
 #include "Platform.h"
 
@@ -13,6 +15,8 @@
 #include "GLUtils.h"
 #include "Logging.h"
 #include "SteamWrapper.h"
+
+#include "VGUI1/vgui_loadtga.h"
 
 #include "CEngine.h"
 
@@ -100,6 +104,8 @@ bool CEngine::RunEngine( const bool bIsListenServer )
 
 	Msg( "HostInit\n" );
 
+	glEnable( GL_TEXTURE_2D );
+
 	if( HostInit() )
 	{
 		bool bQuit = false;
@@ -123,8 +129,34 @@ bool CEngine::RunEngine( const bool bIsListenServer )
 				}
 			}
 
+			glClearColor( 0, 0, 0, 1 );
+
+			glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+			glViewport( 0, 0, 640, 480 );
+
+			glMatrixMode( GL_PROJECTION );
+			glLoadIdentity();
+
+			glOrtho( 0.0f, ( float ) 640, ( float ) 480, 0.0f, 1.0f, -1.0f );
+
+			glMatrixMode( GL_MODELVIEW );
+			glPushMatrix();
+			glLoadIdentity();
+
+			glDisable( GL_CULL_FACE );
+			glDisable( GL_BLEND );
+			glDisable( GL_DEPTH_TEST );
+			glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
+			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+
 			vgui::App::getInstance()->externalTick();
+			m_pRootPanel->repaintAll();
 			m_pRootPanel->paintTraverse();
+
+			//g_pVGUI1Surface->swapBuffers();
+
+			glPopMatrix();
 		}
 	}
 	else
@@ -225,6 +257,12 @@ bool CEngine::HostInit()
 	m_pRootPanel->setCursor( pScheme->getCursor( vgui::Scheme::scu_none ) );
 
 	g_pVGUI1Surface = new CVGUI1Surface( m_pRootPanel );
+
+	auto pImage = vgui_LoadTGA( "resource/background/800_2_c_loading.tga" );
+
+	auto pPanel = new vgui::ImagePanel( pImage );
+
+	pPanel->setParent( m_pRootPanel );
 
 	return true;
 }

@@ -1,6 +1,8 @@
 #ifndef ENGINE_VGUI1_CVGUI1SURFACE_H
 #define ENGINE_VGUI1_CVGUI1SURFACE_H
 
+#include <GL/glew.h>
+
 #include <VGUI_SurfaceBase.h>
 
 class CVGUI1Surface : public vgui::SurfaceBase
@@ -35,6 +37,9 @@ public:
 	void pushMakeCurrent( vgui::Panel* panel, bool useInsets ) override;
 	void popMakeCurrent( vgui::Panel* panel ) override;
 	void applyChanges() override;
+
+private:
+	GLuint m_CurrentTexture = 0;
 };
 
 #endif //ENGINE_VGUI1_CVGUI1SURFACE_H

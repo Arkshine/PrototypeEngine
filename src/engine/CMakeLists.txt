@@ -19,6 +19,7 @@ include_directories(
 	${CMAKE_SOURCE_DIR}/external/SDL2/include
 	${CMAKE_SOURCE_DIR}/external/GLEW/include
 	${CMAKE_SOURCE_DIR}/external/SOURCE_SDK/src/public/steam
+	${CMAKE_SOURCE_DIR}/external/VGUI1/include
 	${OPENGL_INCLUDE_DIR}
 )
 
@@ -51,6 +52,28 @@ target_compile_definitions( Engine PRIVATE
 
 if( UNIX )
 	if ( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
+		set( VGUI1_NAME "vgui.dylib" )
+	else()
+		set( VGUI1_NAME "vgui.so" )
+	endif()
+else()
+	set( VGUI1_NAME "vgui.lib" )
+endif()
+
+find_library( VGUI1 ${VGUI1_NAME} PATHS ${CMAKE_SOURCE_DIR}/external/VGUI1/lib/win32_vc6/ "${STEAMCOMMON}/Half-Life/" "${CMAKE_SOURCE_DIR}/lib/public" )
+
+if( NOT WIN32 )
+	#This mucking about is needed because CMake can't figure out how to handle libraries not named lib<name>.so
+	if( NOT APPLE )
+		set( VGUI1 "-l:\"${VGUI1}\"" )
+	else()
+		#Do nothing for OSX.
+	endif()
+
+endif()
+
+if( UNIX )
+	if ( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
 		set( SDL2_NAME "libSDL2-2.0.0.dylib" )
 	else()
 		set( SDL2_NAME "libSDL2-2.0.so.0" )
@@ -68,6 +91,7 @@ target_link_libraries( Engine
 	${SDL2}
 	${GLEW2}
 	${OPENGL_LIBRARIES}
+	${VGUI1}
 	Tier1
 )
 

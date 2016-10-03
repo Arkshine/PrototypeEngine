@@ -133,12 +133,12 @@ bool CEngine::RunEngine( const bool bIsListenServer )
 
 			glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-			glViewport( 0, 0, 640, 480 );
+			glViewport( 0, 0, m_iWidth, m_iHeight );
 
 			glMatrixMode( GL_PROJECTION );
 			glLoadIdentity();
 
-			glOrtho( 0.0f, ( float ) 640, ( float ) 480, 0.0f, 1.0f, -1.0f );
+			glOrtho( 0.0f, ( float ) m_iWidth, ( float ) m_iHeight, 0.0f, 1.0f, -1.0f );
 
 			glMatrixMode( GL_MODELVIEW );
 			glPushMatrix();
@@ -207,7 +207,7 @@ bool CEngine::CreateGameWindow()
 	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, iGLMajor );
 	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, iGLMinor );
 
-	m_pWindow = SDL_CreateWindow( "Half-Life", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 480, windowFlags );
+	m_pWindow = SDL_CreateWindow( "Half-Life", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_iWidth, m_iHeight, windowFlags );
 
 	if( !m_pWindow )
 		return false;
@@ -246,7 +246,7 @@ bool CEngine::HostInit()
 
 	pApp->reset();
 
-	m_pRootPanel = new vgui::Panel( 0, 0, 320, 240 );
+	m_pRootPanel = new vgui::Panel( 0, 0, m_iWidth, m_iHeight );
 
 	m_pRootPanel->setPaintBorderEnabled( false );
 	m_pRootPanel->setPaintBackgroundEnabled( false );

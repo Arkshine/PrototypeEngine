@@ -23,6 +23,10 @@ public:
 	*/
 	const char* GetMyGameDir() const { return m_szMyGameDir; }
 
+	unsigned int GetWidth() const { return m_iWidth; }
+
+	unsigned int GetHeight() const { return m_iHeight; }
+
 	SDL_Window* GetWindow() { return m_pWindow; }
 
 	void SetMyGameDir( const char* const pszGameDir );
@@ -42,6 +46,9 @@ private:
 	char m_szMyGameDir[ MAX_PATH ] = {};
 
 	std::experimental::filesystem::path m_OldCWD;
+
+	unsigned int m_iWidth = 640;
+	unsigned int m_iHeight = 480;
 
 	SDL_Window* m_pEngineWindow = nullptr;
 	SDL_Window* m_pWindow = nullptr;

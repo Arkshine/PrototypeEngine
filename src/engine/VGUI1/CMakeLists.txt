@@ -5,4 +5,6 @@ add_sources(
 	CVGUI1Surface.cpp
 	vgui_loadtga.h
 	vgui_loadtga.cpp
+	VGUI_RDBitmapTGA.h
+	VGUI_RDBitmapTGA.cpp
 )

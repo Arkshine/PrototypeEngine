@@ -12,6 +12,8 @@
 #include "vgui_loadtga.h"
 #include "VGUI_InputStream.h"
 
+#include "VGUI1/VGUI_RDBitmapTGA.h"
+
 
 // ---------------------------------------------------------------------- //
 // Helper class for loading tga files.
@@ -63,7 +65,7 @@ public:
 	int			m_ReadPos;
 };
 
-vgui::BitmapTGA* vgui_LoadTGA( char const *pFilename, const bool bInvertAlpha )
+vgui::BitmapTGA* vgui_LoadTGA( char const *pFilename, const bool bInvertAlpha, const bool bResolutionDependent )
 {
 	//TODO: needs to handle SteamPipe. - Solokiller
 
@@ -93,7 +95,12 @@ vgui::BitmapTGA* vgui_LoadTGA( char const *pFilename, const bool bInvertAlpha )
 	stream.m_ReadPos = 0;
 	stream.m_DataLen = size;
 
-	vgui::BitmapTGA *pRet = new vgui::BitmapTGA( &stream, bInvertAlpha );
+	vgui::BitmapTGA *pRet;
+	
+	if( bResolutionDependent )
+		pRet = new vgui::RDBitmapTGA( &stream, bInvertAlpha );
+	else
+		pRet = new vgui::BitmapTGA( &stream, bInvertAlpha );
 	
 	return pRet;
 }

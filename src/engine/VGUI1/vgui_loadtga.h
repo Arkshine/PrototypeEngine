@@ -19,7 +19,7 @@
 *	Modified to load TGA files without using the engine API. - Solokiller
 */
 
-vgui::BitmapTGA* vgui_LoadTGA( char const *pFilename, const bool bInvertAlpha = true );
+vgui::BitmapTGA* vgui_LoadTGA( char const *pFilename, const bool bInvertAlpha = true, const bool bResolutionDependent = false );
 
 
 #endif // VGUI_LOADTGA_H

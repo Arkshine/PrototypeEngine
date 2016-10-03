@@ -40,6 +40,8 @@ public:
 
 private:
 	GLuint m_CurrentTexture = 0;
+
+	uchar m_DrawColor[ 4 ];
 };
 
 #endif //ENGINE_VGUI1_CVGUI1SURFACE_H

@@ -29,12 +29,12 @@ void CVGUI1Surface::createPopup( vgui::Panel* embeddedPanel )
 
 bool CVGUI1Surface::hasFocus()
 {
-	return false;
+	return true;
 }
 
 bool CVGUI1Surface::isWithin( int x, int y )
 {
-	return false;
+	return true;
 }
 
 int CVGUI1Surface::createNewTextureID()
@@ -48,18 +48,56 @@ int CVGUI1Surface::createNewTextureID()
 
 void CVGUI1Surface::GetMousePos( int &x, int &y )
 {
+	SDL_GetMouseState( &x, &y );
+
+	//TODO: fullscreen mode has to adjust the coordinates to the current game resolution. - Solokiller
 }
 
 void CVGUI1Surface::drawSetColor( int r, int g, int b, int a )
 {
+	m_DrawColor[ 0 ] = r;
+	m_DrawColor[ 1 ] = g;
+	m_DrawColor[ 2 ] = b;
+	m_DrawColor[ 3 ] = a;
 }
 
 void CVGUI1Surface::drawFilledRect( int x0, int y0, int x1, int y1 )
 {
+	glDisable( GL_TEXTURE_2D );
+
+	glColor4ubv( m_DrawColor );
+
+	glBegin( GL_TRIANGLE_STRIP );
+
+		glVertex2f( static_cast<GLfloat>( x0 ), static_cast<GLfloat>( y0 ) );
+		glVertex2f( static_cast<GLfloat>( x1 ), static_cast<GLfloat>( y0 ) );
+		glVertex2f( static_cast<GLfloat>( x0 ), static_cast<GLfloat>( y1 ) );
+		glVertex2f( static_cast<GLfloat>( x1 ), static_cast<GLfloat>( y1 ) );
+
+	glEnd();
+
+	glEnable( GL_TEXTURE_2D );
 }
 
 void CVGUI1Surface::drawOutlinedRect( int x0, int y0, int x1, int y1 )
 {
+	glDisable( GL_TEXTURE_2D );
+
+	glColor4ubv( m_DrawColor );
+
+	glLineWidth( 1 );
+
+	glBegin( GL_LINE_STRIP );
+
+		glVertex2f( static_cast<GLfloat>( x0 ), static_cast<GLfloat>( y0 ) );
+		glVertex2f( static_cast<GLfloat>( x1 ), static_cast<GLfloat>( y0 ) );
+		glVertex2f( static_cast<GLfloat>( x1 ), static_cast<GLfloat>( y1 ) );
+		glVertex2f( static_cast<GLfloat>( x0 ), static_cast<GLfloat>( y1 ) );
+		glVertex2f( static_cast<GLfloat>( x0 ), static_cast<GLfloat>( y0 ) );
+
+	glEnd();
+
+	glEnable( GL_TEXTURE_2D );
 }
 
 void CVGUI1Surface::drawSetTextFont( vgui::Font* font )

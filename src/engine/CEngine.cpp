@@ -6,6 +6,7 @@
 #include <VGUI_Panel.h>
 #include <VGUI_BitmapTGA.h>
 #include <VGUI_ImagePanel.h>
+#include <VGUI1/VGUI_RDBitmapTGA.h>
 
 #include "Platform.h"
 
@@ -212,6 +213,9 @@ bool CEngine::CreateGameWindow()
 	if( !m_pWindow )
 		return false;
 
+	m_flXScale = m_iWidth / 640.0f;
+	m_flYScale = m_iHeight / 480.0f;
+
 	SDL_RaiseWindow( m_pWindow );
 
 	m_hGLContext = SDL_GL_CreateContext( m_pWindow );
@@ -258,11 +262,44 @@ bool CEngine::HostInit()
 
 	g_pVGUI1Surface = new CVGUI1Surface( m_pRootPanel );
 
-	auto pImage = vgui_LoadTGA( "resource/background/800_2_c_loading.tga" );
-
-	auto pPanel = new vgui::ImagePanel( pImage );
-
-	pPanel->setParent( m_pRootPanel );
+	CreateMainMenuBackground();
 
 	return true;
+}
+
+void CEngine::CreateMainMenuBackground()
+{
+	auto pBackground = new vgui::Panel();
+
+	pBackground->setParent( m_pRootPanel );
+
+	int wide, tall;
+	
+	m_pRootPanel->getSize( wide, tall );
+
+	pBackground->setSize( wide, tall );
+
+	const float flXScale = m_iWidth / 800.0f;
+	const float flYScale = m_iHeight / 600.0f;
+	const int iXOffsetScale = static_cast<int>( 256 * flXScale );
+	const int iYOffsetScale = static_cast<int>( 256 * flYScale );
+
+	char szFileName[ MAX_PATH ];
+
+	for( size_t uiIndex = 0; uiIndex < 4 * 3; ++uiIndex )
+	{
+		snprintf( szFileName, sizeof( szFileName ), "resource/background/800_%u_%c_loading.tga", ( uiIndex / 4 ) + 1, 'a' + ( uiIndex % 4 ) );
+
+		auto pImage = static_cast<vgui::RDBitmapTGA*>( vgui_LoadTGA( szFileName, true, true ) );
+
+		//Resize the images so they fit the default resolution better. The resolution scaling will take care of the rest. - Solokiller
+		pImage->SetXScale( 640 / 800.0f );
+		pImage->SetYScale( 480 / 600.0f );
+
+		auto pImagePanel = new vgui::ImagePanel( pImage );
+
+		pImagePanel->setParent( pBackground );
+
+		pImagePanel->setPos( iXOffsetScale * ( uiIndex % 4 ), iYOffsetScale * ( uiIndex / 4 ) );
+	}
 }

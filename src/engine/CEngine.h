@@ -27,6 +27,10 @@ public:
 
 	unsigned int GetHeight() const { return m_iHeight; }
 
+	float GetXScale() const { return m_flXScale; }
+
+	float GetYScale() const { return m_flYScale; }
+
 	SDL_Window* GetWindow() { return m_pWindow; }
 
 	void SetMyGameDir( const char* const pszGameDir );
@@ -42,13 +46,18 @@ private:
 
 	bool HostInit();
 
+	void CreateMainMenuBackground();
+
 private:
 	char m_szMyGameDir[ MAX_PATH ] = {};
 
 	std::experimental::filesystem::path m_OldCWD;
 
-	unsigned int m_iWidth = 640;
-	unsigned int m_iHeight = 480;
+	unsigned int m_iWidth = 1680;
+	unsigned int m_iHeight = 1050;
+
+	float m_flXScale = 1;
+	float m_flYScale = 1;
 
 	SDL_Window* m_pEngineWindow = nullptr;
 	SDL_Window* m_pWindow = nullptr;

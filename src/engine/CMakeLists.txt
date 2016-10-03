@@ -38,8 +38,10 @@ add_sources(
 )
 
 add_subdirectory( ${CMAKE_SOURCE_DIR}/external/SOURCE_SDK/src/public/steam public/steam )
+add_subdirectory( ${CMAKE_SOURCE_DIR}/external/VGUI1/include VGUI1_include )
 add_subdirectory( ${CMAKE_SOURCE_DIR}/src/common common )
 add_subdirectory( console )
+add_subdirectory( VGUI1 )
 
 preprocess_sources()
 

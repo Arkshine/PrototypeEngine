@@ -7,6 +7,11 @@
 
 #include "Platform.h"
 
+namespace vgui
+{
+class Panel;
+}
+
 class CEngine final
 {
 public:
@@ -40,6 +45,8 @@ private:
 	SDL_Window* m_pWindow = nullptr;
 
 	SDL_GLContext m_hGLContext = nullptr;
+
+	vgui::Panel* m_pRootPanel = nullptr;
 
 private:
 	CEngine( const CEngine& ) = delete;

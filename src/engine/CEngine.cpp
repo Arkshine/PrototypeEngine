@@ -2,6 +2,9 @@
 
 #include <gl/glew.h>
 
+#include <VGUI_App.h>
+#include <VGUI_Panel.h>
+
 #include "Platform.h"
 
 #include "CNetworkBuffer.h"
@@ -119,6 +122,9 @@ bool CEngine::RunEngine( const bool bIsListenServer )
 					}
 				}
 			}
+
+			vgui::App::getInstance()->externalTick();
+			m_pRootPanel->paintTraverse();
 		}
 	}
 	else
@@ -203,6 +209,22 @@ bool CEngine::HostInit()
 
 	if( !g_CommandBuffer.Initialize( &g_CVar ) )
 		return false;
+
+	auto pApp = vgui::App::getInstance();
+
+	pApp->reset();
+
+	m_pRootPanel = new vgui::Panel( 0, 0, 320, 240 );
+
+	m_pRootPanel->setPaintBorderEnabled( false );
+	m_pRootPanel->setPaintBackgroundEnabled( false );
+	m_pRootPanel->setPaintEnabled( false );
+
+	vgui::Scheme* pScheme = pApp->getScheme();
+
+	m_pRootPanel->setCursor( pScheme->getCursor( vgui::Scheme::scu_none ) );
+
+	g_pVGUI1Surface = new CVGUI1Surface( m_pRootPanel );
 
 	return true;
 }

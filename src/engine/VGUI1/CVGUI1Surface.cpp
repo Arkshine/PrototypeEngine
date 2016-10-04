@@ -8,32 +8,42 @@
 
 void CVGUI1Surface::setTitle( const char* title )
 {
+	//Nothing
 }
 
 bool CVGUI1Surface::setFullscreenMode( int wide, int tall, int bpp )
 {
+	//Nothing
+
 	return false;
 }
 
 void CVGUI1Surface::setWindowedMode()
 {
+	//Nothing
 }
 
 void CVGUI1Surface::setAsTopMost( bool state )
 {
+	//Nothing
 }
 
 void CVGUI1Surface::createPopup( vgui::Panel* embeddedPanel )
 {
+	//Nothing
 }
 
 bool CVGUI1Surface::hasFocus()
 {
+	//Nothing
+
 	return true;
 }
 
 bool CVGUI1Surface::isWithin( int x, int y )
 {
+	//Nothing
+
 	return true;
 }
 
@@ -102,18 +112,22 @@ void CVGUI1Surface::drawOutlinedRect( int x0, int y0, int x1, int y1 )
 
 void CVGUI1Surface::drawSetTextFont( vgui::Font* font )
 {
+	//TODO
 }
 
 void CVGUI1Surface::drawSetTextColor( int r, int g, int b, int a )
 {
+	//TODO
 }
 
 void CVGUI1Surface::drawSetTextPos( int x, int y )
 {
+	//TODO
 }
 
 void CVGUI1Surface::drawPrintText( const char* text, int textLen )
 {
+	//TODO
 }
 
 void CVGUI1Surface::drawSetTextureRGBA( int id, const char* rgba, int wide, int tall )
@@ -157,14 +171,17 @@ void CVGUI1Surface::drawTexturedRect( int x0, int y0, int x1, int y1 )
 
 void CVGUI1Surface::invalidate( vgui::Panel *panel )
 {
+	//Nothing
 }
 
 void CVGUI1Surface::enableMouseCapture( bool state )
 {
+	//Nothing
 }
 
 void CVGUI1Surface::setCursor( vgui::Cursor* cursor )
 {
+	//TODO
 }
 
 void CVGUI1Surface::swapBuffers()
@@ -214,4 +231,5 @@ void CVGUI1Surface::popMakeCurrent( vgui::Panel* panel )
 
 void CVGUI1Surface::applyChanges()
 {
+	//Nothing
 }

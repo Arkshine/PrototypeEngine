@@ -2,6 +2,7 @@ add_sources(
 	VGUI.h
 	VGUI_ActionSignal.h
 	VGUI_App.h
+	VGUI_BaseFontPlat.h
 	VGUI_Bitmap.h
 	VGUI_BitmapTGA.h
 	VGUI_Border.h

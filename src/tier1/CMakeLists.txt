@@ -56,14 +56,14 @@ set_target_properties( Tier1 PROPERTIES
 
 if( WIN32 AND MSVC )
 	#Set Windows subsystem
-	set( ENGINE_LINK_FLAGS "/SUBSYSTEM:WINDOWS" )
+	set( TIER1_LINK_FLAGS "/SUBSYSTEM:WINDOWS" )
 else()
-	set( ENGINE_LINK_FLAGS "" )
+	set( TIER1_LINK_FLAGS "" )
 endif()
 
 set_target_properties( Tier1 
 	PROPERTIES COMPILE_FLAGS "${LINUX_32BIT_FLAG}" 
-	LINK_FLAGS "${ENGINE_LINK_FLAGS} ${LINUX_32BIT_FLAG}" )
+	LINK_FLAGS "${TIER1_LINK_FLAGS} ${LINUX_32BIT_FLAG}" )
 
 #No lib prefix
 set_target_properties( Tier1 PROPERTIES PREFIX "" )

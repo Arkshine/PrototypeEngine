@@ -169,11 +169,13 @@ FileHandle_t CFileSystem::Open( const char *pFileName, const char *pOptions, con
 
 		path.make_preferred();
 
-		if( FILE* pFile = fopen( path.u8string().c_str(), pOptions ) )
-		{
-			m_OpenedFiles.emplace_back( pFile );
+		CFileHandle file( *this, path.u8string().c_str(), pOptions );
 
-			return reinterpret_cast<FileHandle_t>( m_OpenedFiles.back() );
+		if( file.IsOpen() )
+		{
+			m_OpenedFiles.emplace_back( std::make_unique<CFileHandle>( std::move( file ) ) );
+
+			return reinterpret_cast<FileHandle_t>( m_OpenedFiles.back().get() );
 		}
 	}
 
@@ -185,50 +187,47 @@ void CFileSystem::Close( FileHandle_t file )
 	if( file == FILESYSTEM_INVALID_HANDLE )
 		return;
 
-	auto pFile = reinterpret_cast<FILE*>( file );
+	auto pFile = reinterpret_cast<CFileHandle*>( file );
 
 	auto position = m_OpenedFiles.begin();
 
 	for( auto end = m_OpenedFiles.end(); position != end; ++position )
 	{
-		if( *position == pFile )
+		if( position->get() == pFile )
 			break;
 	}
 
 	if( position == m_OpenedFiles.end() )
 		return;
 
-	if( pFile )
+	if( pFile->IsOpen() )
 	{
-		fclose( pFile );
-		*position = nullptr;
+		Warning( FILESYSTEM_WARNING_REPORTALLACCESSES, "CFileSystem::Close: Closing file \"%s\"\n", pFile->GetFileName().c_str() );
+		pFile->Close();
+	}
+	else
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Close: Closing file that was already closed, or not opened!\n" );
 	}
 
-	//Erase this file from the list if it's the last one only. This allows handles to remain valid.
-	if( position + 1 == m_OpenedFiles.end() )
-	{
-		m_OpenedFiles.erase( position );
-
-		//Erase all closed files that were in the list in front of this one.
-		for( auto it = m_OpenedFiles.rbegin(); it != m_OpenedFiles.rend(); )
-		{
-			if( *it != nullptr )
-				break;
-
-			it = decltype( it )( m_OpenedFiles.erase( it.base() ) );
-		}
-	}
+	m_OpenedFiles.erase( position );
 }
 
 void CFileSystem::Seek( FileHandle_t file, int pos, FileSystemSeek_t seekType )
 {
-	if( !IsValidFileHandle( file ) )
-		return;
-
-	auto pFile = reinterpret_cast<FILE*>( file );
+	auto pFile = reinterpret_cast<CFileHandle*>( file );
 
 	if( !pFile )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Seek: Attempted to seek null file handle!\n" );
 		return;
+	}
+
+	if( !pFile->IsOpen() )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Seek: Attempted to seek handle with null file pointer!\n" );
+		return;
+	}
 
 	int origin;
 
@@ -244,45 +243,45 @@ void CFileSystem::Seek( FileHandle_t file, int pos, FileSystemSeek_t seekType )
 		}
 	}
 
-	fseek( pFile, pos, origin );
+	fseek( pFile->GetFile(), pos, origin );
 }
 
 unsigned int CFileSystem::Tell( FileHandle_t file )
 {
-	if( !IsValidFileHandle( file ) )
-		return 0;
-
-	auto pFile = reinterpret_cast<FILE*>( file );
+	auto pFile = reinterpret_cast<CFileHandle*>( file );
 
 	if( !pFile )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Tell: Attempted to tell null file handle!\n" );
 		return 0;
+	}
 
-	return ftell( pFile );
+	if( !pFile->IsOpen() )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Tell: Attempted to tell handle with null file pointer!\n" );
+		return 0;
+	}
+
+	return ftell( pFile->GetFile() );
 }
 			 
 unsigned int CFileSystem::Size( FileHandle_t file )
 {
-	if( !IsValidFileHandle( file ) )
-		return 0;
-
-	auto pFile = reinterpret_cast<FILE*>( file );
+	auto pFile = reinterpret_cast<CFileHandle*>( file );
 
 	if( !pFile )
-		return 0;
-
-	auto fd = _fileno( pFile );
-
-	if( fd == -1 )
-		return 0;
-
-	struct stat fileStatus;
-
-	if( fstat( fd, &fileStatus ) == 0 )
 	{
-		return fileStatus.st_size;
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Size: Attempted to size null file handle!\n" );
+		return 0;
 	}
 
-	return 0;
+	if( !pFile->IsOpen() )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Size: Attempted to size handle with null file pointer!\n" );
+		return 0;
+	}
+
+	return static_cast<unsigned int>( pFile->GetLength() );
 }
 			 
 unsigned int CFileSystem::Size( const char *pFileName )
@@ -325,97 +324,139 @@ void CFileSystem::FileTimeToString( char* pStrip, int maxCharsIncludingTerminato
 
 bool CFileSystem::IsOk( FileHandle_t file )
 {
-	if( !IsValidFileHandle( file ) )
-		return false;
-
-	auto pFile = reinterpret_cast<FILE*>( file );
+	auto pFile = reinterpret_cast<CFileHandle*>( file );
 
 	if( !pFile )
-		return false;
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::IsOk: Attempted to check for ok null file handle!\n" );
+		return 0;
+	}
 
-	return ferror( pFile ) == 0;
+	if( !pFile->IsOpen() )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::IsOk: Attempted to check for ok handle with null file pointer!\n" );
+		return 0;
+	}
+
+	return ferror( pFile->GetFile() ) == 0;
 }
 
 void CFileSystem::Flush( FileHandle_t file )
 {
-	if( !IsValidFileHandle( file ) )
-		return;
-
-	auto pFile = reinterpret_cast<FILE*>( file );
+	auto pFile = reinterpret_cast<CFileHandle*>( file );
 
 	if( !pFile )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Flush: Attempted to flush null file handle!\n" );
 		return;
+	}
 
-	fflush( pFile );
+	if( !pFile->IsOpen() )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Flush: Attempted to flush handle with null file pointer!\n" );
+		return;
+	}
+
+	fflush( pFile->GetFile() );
 }
 
 bool CFileSystem::EndOfFile( FileHandle_t file )
 {
-	if( !IsValidFileHandle( file ) )
-		return true;
-
-	auto pFile = reinterpret_cast<FILE*>( file );
+	auto pFile = reinterpret_cast<CFileHandle*>( file );
 
 	if( !pFile )
-		return true;
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::EndOfFile: Attempted to check for EOF on null file handle!\n" );
+		return 0;
+	}
 
-	return !!feof( pFile );
+	if( !pFile->IsOpen() )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::EndOfFile: Attempted to check for EOF handle with null file pointer!\n" );
+		return 0;
+	}
+
+	return !!feof( pFile->GetFile() );
 }
 
 int CFileSystem::Read( void* pOutput, int size, FileHandle_t file )
 {
-	if( !IsValidFileHandle( file ) )
-		return 0;
-
-	auto pFile = reinterpret_cast<FILE*>( file );
+	auto pFile = reinterpret_cast<CFileHandle*>( file );
 
 	if( !pFile )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Read: Attempted to read from null file handle!\n" );
 		return 0;
+	}
 
-	return fread( pOutput, 1, size, pFile );
+	if( !pFile->IsOpen() )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Read: Attempted to read from handle with null file pointer!\n" );
+		return 0;
+	}
+
+	return fread( pOutput, 1, size, pFile->GetFile() );
 }
 
 int CFileSystem::Write( void const* pInput, int size, FileHandle_t file )
 {
-	if( !IsValidFileHandle( file ) )
-		return 0;
-
-	auto pFile = reinterpret_cast<FILE*>( file );
+	auto pFile = reinterpret_cast<CFileHandle*>( file );
 
 	if( !pFile )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Write: Attempted to write to null file handle!\n" );
 		return 0;
+	}
 
-	return fwrite( pInput, 1, size, pFile );
+	if( !pFile->IsOpen() )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Write: Attempted to write to handle with null file pointer!\n" );
+		return 0;
+	}
+
+	return fwrite( pInput, 1, size, pFile->GetFile() );
 }
 
 char *CFileSystem::ReadLine( char *pOutput, int maxChars, FileHandle_t file )
 {
-	if( !IsValidFileHandle( file ) )
-		return 0;
-
-	auto pFile = reinterpret_cast<FILE*>( file );
+	auto pFile = reinterpret_cast<CFileHandle*>( file );
 
 	if( !pFile )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::ReadLine: Attempted to read line from null file handle!\n" );
 		return 0;
+	}
 
-	return fgets( pOutput, maxChars, pFile );
+	if( !pFile->IsOpen() )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::ReadLine: Attempted to read line from handle with null file pointer!\n" );
+		return 0;
+	}
+
+	return fgets( pOutput, maxChars, pFile->GetFile() );
 }
 
 int CFileSystem::FPrintf( FileHandle_t file, char *pFormat, ... )
 {
-	if( !IsValidFileHandle( file ) )
-		return 0;
-
-	auto pFile = reinterpret_cast<FILE*>( file );
+	auto pFile = reinterpret_cast<CFileHandle*>( file );
 
 	if( !pFile )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::FPrint: Attempted to format print to null file handle!\n" );
 		return 0;
+	}
+
+	if( !pFile->IsOpen() )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::FPrintf: Attempted to format print to handle with null file pointer!\n" );
+		return 0;
+	}
 
 	va_list list;
 
 	va_start( list, pFormat );
 
-	const auto result = vfprintf( pFile, pFormat, list );
+	const auto result = vfprintf( pFile->GetFile(), pFormat, list );
 
 	va_end( list );
 
@@ -653,7 +694,7 @@ bool CFileSystem::GetCurrentDirectory( char* pDirectory, int maxlen )
 
 	const auto szCurPath = path.u8string();
 
-	if( szCurPath.length() >= maxlen )
+	if( szCurPath.length() >= static_cast<decltype( szCurPath.length() )>( maxlen ) )
 	{
 		pDirectory[ 0 ] = '\0';
 		return false;
@@ -710,15 +751,21 @@ int CFileSystem::ResumeResourcePreloading()
 
 int CFileSystem::SetVBuf( FileHandle_t stream, char *buffer, int mode, long size )
 {
-	if( !IsValidFileHandle( stream ) )
-		return 0;
-
-	auto pFile = reinterpret_cast<FILE*>( stream );
+	auto pFile = reinterpret_cast<CFileHandle*>( stream );
 
 	if( !pFile )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::SetVBuf: Attempted to set VBuf for null file handle!\n" );
 		return 0;
+	}
 
-	return setvbuf( pFile, buffer, mode, size );
+	if( !pFile->IsOpen() )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::SetVBuf: Attempted to set VBuf for handle with null file pointer!\n" );
+		return 0;
+	}
+
+	return setvbuf( pFile->GetFile(), buffer, mode, size );
 }
 
 void CFileSystem::GetInterfaceVersion( char *p, int maxlen )
@@ -844,26 +891,4 @@ bool CFileSystem::AddSearchPath( const char *pPath, const char *pathID, const bo
 	m_SearchPaths.emplace_back( path );
 
 	return true;
-}
-
-bool CFileSystem::IsValidFileHandle( FileHandle_t handle ) const
-{
-	if( handle == FILESYSTEM_INVALID_HANDLE )
-		return false;
-
-	if( m_OpenedFiles.empty() )
-		return false;
-
-	auto pFile = reinterpret_cast<FILE*>( handle );
-
-	//TODO: is this really worth doing? This is only going to return false if the user messes things up. - Solokiller
-	auto position = m_OpenedFiles.begin();
-
-	for( auto end = m_OpenedFiles.end(); position != end; ++position )
-	{
-		if( *position == pFile )
-			return true;
-	}
-
-	return false;
 }

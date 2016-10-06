@@ -11,6 +11,8 @@
 
 #include "Platform.h"
 
+#include "CFileHandle.h"
+
 #include "FileSystem.h"
 
 #undef SearchPath
@@ -65,7 +67,7 @@ private:
 	};
 
 	typedef std::vector<SearchPath> SearchPaths_t;
-	typedef std::vector<FILE*> OpenedFiles_t;
+	typedef std::vector<std::unique_ptr<CFileHandle>> OpenedFiles_t;
 	typedef std::vector<std::unique_ptr<FindFileData>> FindFiles_t;
 
 public:
@@ -180,14 +182,13 @@ public:
 
 	void			AddSearchPathNoWrite( const char *pPath, const char *pathID ) override;
 
-private:
 	void Warning( FileWarningLevel_t level, const char* pszFormat, ... );
+
+private:
 
 	SearchPaths_t::const_iterator FindSearchPath( const char* pszPath, const bool bCheckPathID = false, const char* pszPathID = nullptr ) const;
 
 	bool AddSearchPath( const char *pPath, const char *pathID, const bool bReadOnly );
-
-	bool IsValidFileHandle( FileHandle_t handle ) const;
 
 private:
 	SearchPaths_t m_SearchPaths;

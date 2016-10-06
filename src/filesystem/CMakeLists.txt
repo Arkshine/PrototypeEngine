@@ -11,6 +11,8 @@ include_directories(
 )
 
 add_sources(
+	CFileHandle.h
+	CFileHandle.cpp
 	CFileSystem.h
 	CFileSystem.cpp
 )

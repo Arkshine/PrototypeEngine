@@ -1,4 +1,6 @@
 add_sources(
+	ByteSwap.h
+	ByteSwap.cpp
 	CCommand.h
 	CCommand.cpp
 	CNetworkBuffer.h
@@ -8,6 +10,8 @@ add_sources(
 	Logging.cpp
 	Platform.h
 	Platform.cpp
+	StringUtils.h
+	StringUtils.cpp
 	Tokenization.h
 	Tokenization.cpp
 )

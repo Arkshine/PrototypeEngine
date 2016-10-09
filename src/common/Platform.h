@@ -44,6 +44,11 @@
 
 #define MakeDirectory( pszDirectory ) CreateDirectoryA( pszDirectory, nullptr )
 
+//64 bit fopen support. - Solokiller
+#define fopen64 fopen
+#define fseek64 _fseeki64
+#define ftell64 _ftelli64
+
 //Define these macros once only. The SDK is such a mess. - Solokiller
 #define DLLEXPORT __declspec( dllexport )
 #define DLLIMPORT __declspec( dllimport )
@@ -70,13 +75,17 @@
 
 #define MakeDirectory( pszDirectory ) mkdir( pszDirectory, 0777 )
 
+//64 bit fopen support. - Solokiller
+#define fseek64 fseeko64
+#define ftell64 ftello64
+
 #define DLLEXPORT __attribute__( ( visibility( "default" ) ) )
 #define DLLIMPORT
 
 #define __cdecl
 
 //TODO: GLM has ivec2, use that. - Solokiller
-#ifdef LINUX
+#ifdef PLAT_LINUX
 typedef struct tagPOINT
 {
 	int x;

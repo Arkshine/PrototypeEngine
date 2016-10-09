@@ -197,10 +197,13 @@ if( WIN32 )
 endif()
 
 if( UNIX )
-	#Define LINUX so code can check for it
+	#Define PLAT_LINUX so code can check for it
+	#Enable 64 bit fopen functions for use in the filesystem.
 	set( SHARED_DEFS
 		${SHARED_DEFS}
-		LINUX
+		PLAT_LINUX
+		_LARGEFILE_SOURCE
+		_LARGEFILE64_SOURCE
 	)
 	
 	set( LINUX_32BIT_FLAG "-m32" )

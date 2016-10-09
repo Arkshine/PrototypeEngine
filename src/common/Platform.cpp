@@ -10,7 +10,7 @@
 #include <codecvt>
 #endif
 
-#ifdef LINUX
+#ifdef PLAT_LINUX
 #include <fstream>
 #include <vector>
 #endif
@@ -68,7 +68,7 @@ bool InitCommandLine( int& iOutArgC, char*** pppszArgV )
 }
 #endif
 
-#ifdef LINUX
+#ifdef PLAT_LINUX
 bool InitCommandLine( int& iOutArgC, char*** pppszArgV )
 {
 	//Read the command line from this special file.

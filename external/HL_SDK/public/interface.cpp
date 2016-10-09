@@ -76,7 +76,7 @@ EXPORT_FUNCTION IBaseInterface *CreateInterface( const char *pName, int *pReturn
 	return NULL;	
 }
 
-#ifdef LINUX
+#ifdef PLAT_LINUX
 static IBaseInterface *CreateInterfaceLocal( const char *pName, int *pReturnCode )
 {
 	InterfaceReg *pCur;
@@ -237,7 +237,7 @@ CreateInterfaceFn Sys_GetFactory( CSysModule *pModule )
 //-----------------------------------------------------------------------------
 CreateInterfaceFn Sys_GetFactoryThis( void )
 {
-#ifdef LINUX
+#ifdef PLAT_LINUX
 	return CreateInterfaceLocal;
 #else
 	return CreateInterface;

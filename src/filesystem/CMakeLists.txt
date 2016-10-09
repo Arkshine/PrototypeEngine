@@ -47,6 +47,7 @@ find_library( SDL2 ${SDL2_NAME} PATHS ${CMAKE_SOURCE_DIR}/external/SDL2/lib/ "${
 #Link with filesystem dependencies
 target_link_libraries( FileSystem 
 	${SDL2}
+	${UNIX_FS_LIB}
 )
 
 #CMake places libraries in /Debug or /Release on Windows, so explicitly set the paths for both.

@@ -45,6 +45,8 @@ add_subdirectory( VGUI1 )
 
 preprocess_sources()
 
+link_directories( "${STEAMCOMMON}/Half-Life" )
+
 add_library( Engine SHARED ${PREP_SRCS} )
 
 target_compile_definitions( Engine PRIVATE
@@ -67,8 +69,7 @@ find_library( VGUI1 ${VGUI1_NAME} PATHS ${CMAKE_SOURCE_DIR}/external/VGUI1/lib/w
 if( NOT WIN32 )
 	#This mucking about is needed because CMake can't figure out how to handle libraries not named lib<name>.so
 	if( NOT APPLE )
-		#Why does this work with -l in the HLE project? This is bullshit man!
-		set( VGUI1 "-L:\"${VGUI1}\"" )
+		set( VGUI1 "-l:\"${VGUI1_NAME}\"" )
 	else()
 		#Do nothing for OSX.
 	endif()
@@ -96,6 +97,7 @@ target_link_libraries( Engine
 	${OPENGL_LIBRARIES}
 	${VGUI1}
 	Tier1
+	${UNIX_FS_LIB}
 )
 
 #CMake places libraries in /Debug or /Release on Windows, so explicitly set the paths for both.

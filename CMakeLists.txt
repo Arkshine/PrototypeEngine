@@ -214,6 +214,12 @@ endif()
 #C++14 support
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y" )
 
+if( UNIX )
+	set( UNIX_FS_LIB stdc++fs )
+else()
+	set( UNIX_FS_LIB )
+endif()
+
 project( GoldSource2 )
 
 add_subdirectory( src )

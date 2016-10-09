@@ -9,7 +9,7 @@ CFileHandle::CFileHandle( CFileSystem& fileSystem, const char* pszFileName, cons
 	assert( pszFileName );
 	assert( pszMode );
 
-	m_pFile = fopen( pszFileName, pszMode );
+	m_pFile = fopen64( pszFileName, pszMode );
 
 	if( m_pFile )
 	{

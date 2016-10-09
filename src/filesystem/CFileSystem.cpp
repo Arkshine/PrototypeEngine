@@ -234,20 +234,22 @@ void CFileSystem::Seek( FileHandle_t file, int pos, FileSystemSeek_t seekType )
 		return;
 	}
 
+	int64_t position = pos;
+
 	if( pFile->IsPackEntry() )
 	{
 		switch( seekType )
 		{
 		case FILESYSTEM_SEEK_HEAD:
 			{
-				pos += static_cast<int>( pFile->GetStartOffset() );
+				position += pFile->GetStartOffset();
 				break;
 			}
 
 		case FILESYSTEM_SEEK_TAIL:
 			{
 				//Adjust end position to the file's end
-				pos += static_cast<int>( pFile->GetStartOffset() + pFile->GetLength() );
+				position += pFile->GetStartOffset() + pFile->GetLength();
 				seekType = FILESYSTEM_SEEK_HEAD;
 				break;
 			}
@@ -268,7 +270,7 @@ void CFileSystem::Seek( FileHandle_t file, int pos, FileSystemSeek_t seekType )
 		}
 	}
 
-	fseek( pFile->GetFile(), pos, origin );
+	fseek64( pFile->GetFile(), position, origin );
 }
 
 unsigned int CFileSystem::Tell( FileHandle_t file )
@@ -289,12 +291,12 @@ unsigned int CFileSystem::Tell( FileHandle_t file )
 
 	if( pFile->IsPackEntry() )
 	{
-		const auto position = ftell( pFile->GetFile() );
+		const auto position = ftell64( pFile->GetFile() );
 
 		return static_cast<unsigned int>( position - pFile->GetStartOffset() );
 	}
 
-	return ftell( pFile->GetFile() );
+	return static_cast<unsigned int>( ftell64( pFile->GetFile() ) );
 }
 			 
 unsigned int CFileSystem::Size( FileHandle_t file )
@@ -410,9 +412,9 @@ bool CFileSystem::EndOfFile( FileHandle_t file )
 
 	if( pFile->IsPackEntry() )
 	{
-		const auto position = ftell( pFile->GetFile() );
+		const auto position = ftell64( pFile->GetFile() );
 
-		return position >= pFile->GetStartOffset() + pFile->GetLength();
+		return static_cast<uint64_t>( position ) >= pFile->GetStartOffset() + pFile->GetLength();
 	}
 
 	return !!feof( pFile->GetFile() );
@@ -439,7 +441,7 @@ int CFileSystem::Read( void* pOutput, int size, FileHandle_t file )
 		if( pFile->GetLength() == 0 )
 			return 0;
 
-		const auto position = ftell( pFile->GetFile() );
+		const auto position = ftell64( pFile->GetFile() );
 
 		const auto relativePos = position - pFile->GetStartOffset();
 
@@ -502,7 +504,7 @@ char *CFileSystem::ReadLine( char *pOutput, int maxChars, FileHandle_t file )
 		if( pFile->GetLength() == 0 )
 			return nullptr;
 
-		const auto position = ftell( pFile->GetFile() );
+		const auto position = ftell64( pFile->GetFile() );
 
 		const auto relativePos = position - pFile->GetStartOffset();
 
@@ -677,7 +679,7 @@ const char *CFileSystem::FindNext( FileFindHandle_t handle )
 bool CFileSystem::FindIsDirectory( FileFindHandle_t handle )
 {
 	if( static_cast<size_t>( handle ) >= m_FindFiles.size() )
-		return nullptr;
+		return false;
 
 	auto& data = *m_FindFiles[ handle ];
 
@@ -901,7 +903,7 @@ bool ProcessPackFile( CFileSystem& fileSystem, const char* pszFileName, FILE* pF
 {
 	assert( pFile );
 
-	PackType::Header_t header;
+	typename PackType::Header_t header;
 
 	if( fread( &header, sizeof( header ), 1, pFile ) != 1 )
 	{
@@ -912,13 +914,13 @@ bool ProcessPackFile( CFileSystem& fileSystem, const char* pszFileName, FILE* pF
 	header.dirofs = LittleValue( header.dirofs );
 	header.dirlen = LittleValue( header.dirlen );
 
-	if( ( header.dirlen % sizeof( PackType::Entry_t ) ) != 0 )
+	if( ( header.dirlen % sizeof( typename PackType::Entry_t ) ) != 0 )
 	{
 		fileSystem.Warning( FILESYSTEM_WARNING_CRITICAL, "ProcessPackFile(%s): Invalid directory length for \"%s\"\n", PackType::Info_t::NAME, pszFileName );
 		return false;
 	}
 
-	const size_t numFiles = static_cast<size_t>( header.dirlen / sizeof( PackType::Entry_t ) );
+	const size_t numFiles = static_cast<size_t>( header.dirlen / sizeof( typename PackType::Entry_t ) );
 
 	if( numFiles > PackType::MAX_FILES )
 	{
@@ -927,12 +929,11 @@ bool ProcessPackFile( CFileSystem& fileSystem, const char* pszFileName, FILE* pF
 		return false;
 	}
 
-	//TODO: handle 64 bit file support properly. - Solokiller
-	fseek( pFile, static_cast<long>( header.dirofs ), SEEK_SET );
+	fseek64( pFile, header.dirofs, SEEK_SET );
 
-	auto packEntries = std::make_unique<PackType::Entry_t[]>( numFiles );
+	auto packEntries = std::make_unique<typename PackType::Entry_t[]>( numFiles );
 
-	if( fread( packEntries.get(), sizeof( PackType::Entry_t ), numFiles, pFile ) != numFiles )
+	if( fread( packEntries.get(), sizeof( typename PackType::Entry_t ), numFiles, pFile ) != numFiles )
 	{
 		fileSystem.Warning( FILESYSTEM_WARNING_CRITICAL, "ProcessPackFile(%s): Couldn't read directory entries from \"%s\"\n", PackType::Info_t::NAME, pszFileName );
 		return false;

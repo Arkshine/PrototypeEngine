@@ -1,4 +1,9 @@
+#include <cassert>
+
 #include "interface.h"
+
+#include "ByteSwap.h"
+#include "PackFile.h"
 
 #include "CFileSystem.h"
 
@@ -52,13 +57,13 @@ void CFileSystem::RemoveFile( const char *pRelativePath, const char *pathID )
 
 	for( const auto& searchPath : m_SearchPaths )
 	{
-		if( searchPath.flags & SearchPathFlag::READ_ONLY )
+		if( searchPath->flags & SearchPathFlag::READ_ONLY )
 			continue;
 
-		if( pathID && ( !searchPath.pszPathID || strcmp( pathID, searchPath.pszPathID ) != 0 ) )
+		if( pathID && ( !searchPath->pszPathID || strcmp( pathID, searchPath->pszPathID ) != 0 ) )
 			continue;
 
-		path = fs::path( searchPath.szPath ) / pRelativePath;
+		path = fs::path( searchPath->szPath ) / pRelativePath;
 
 		if( fs::remove( path, error ) )
 			break;
@@ -72,15 +77,15 @@ void CFileSystem::CreateDirHierarchy( const char *path, const char *pathID )
 
 	for( const auto& searchPath : m_SearchPaths )
 	{
-		if( searchPath.flags & SearchPathFlag::READ_ONLY )
+		if( searchPath->flags & SearchPathFlag::READ_ONLY )
 			continue;
 
-		if( pathID && ( !searchPath.pszPathID || strcmp( pathID, searchPath.pszPathID ) != 0 ) )
+		if( pathID && ( !searchPath->pszPathID || strcmp( pathID, searchPath->pszPathID ) != 0 ) )
 			continue;
 
 		std::error_code error;
 
-		fs::path directories = fs::path( searchPath.szPath ) / path;
+		fs::path directories = fs::path( searchPath->szPath ) / path;
 
 		fs::create_directories( directories, error );
 
@@ -92,12 +97,12 @@ void CFileSystem::CreateDirHierarchy( const char *path, const char *pathID )
 	{
 		for( const auto& searchPath : m_SearchPaths )
 		{
-			if( searchPath.flags & SearchPathFlag::READ_ONLY )
+			if( searchPath->flags & SearchPathFlag::READ_ONLY )
 				continue;
 
 			std::error_code error;
 
-			fs::path directories = fs::path( searchPath.szPath ) / path;
+			fs::path directories = fs::path( searchPath->szPath ) / path;
 
 			fs::create_directories( directories, error );
 
@@ -117,7 +122,7 @@ bool CFileSystem::FileExists( const char *pFileName )
 
 	for( const auto& searchPath : m_SearchPaths )
 	{
-		path = fs::path( searchPath.szPath ) / pFileName;
+		path = fs::path( searchPath->szPath ) / pFileName;
 
 		if( fs::exists( path, error ) )
 		{
@@ -139,7 +144,7 @@ bool CFileSystem::IsDirectory( const char *pFileName )
 
 	for( const auto& searchPath : m_SearchPaths )
 	{
-		path = fs::path( searchPath.szPath ) / pFileName;
+		path = fs::path( searchPath->szPath ) / pFileName;
 
 		if( fs::is_directory( path, error ) )
 			return true;
@@ -159,13 +164,13 @@ FileHandle_t CFileSystem::Open( const char *pFileName, const char *pOptions, con
 
 	for( const auto& searchPath : m_SearchPaths )
 	{
-		if( searchPath.flags & SearchPathFlag::READ_ONLY && bIsWrite )
+		if( searchPath->flags & SearchPathFlag::READ_ONLY && bIsWrite )
 			continue;
 
-		if( pathID && ( !searchPath.pszPathID || strcmp( pathID, searchPath.pszPathID ) != 0 ) )
+		if( pathID && ( !searchPath->pszPathID || strcmp( pathID, searchPath->pszPathID ) != 0 ) )
 			continue;
 
-		path = fs::path( searchPath.szPath ) / pFileName;
+		path = fs::path( searchPath->szPath ) / pFileName;
 
 		path.make_preferred();
 
@@ -229,6 +234,26 @@ void CFileSystem::Seek( FileHandle_t file, int pos, FileSystemSeek_t seekType )
 		return;
 	}
 
+	if( pFile->IsPackEntry() )
+	{
+		switch( seekType )
+		{
+		case FILESYSTEM_SEEK_HEAD:
+			{
+				pos += static_cast<int>( pFile->GetStartOffset() );
+				break;
+			}
+
+		case FILESYSTEM_SEEK_TAIL:
+			{
+				//Adjust end position to the file's end
+				pos += static_cast<int>( pFile->GetStartOffset() + pFile->GetLength() );
+				seekType = FILESYSTEM_SEEK_HEAD;
+				break;
+			}
+		}
+	}
+
 	int origin;
 
 	switch( seekType )
@@ -260,6 +285,13 @@ unsigned int CFileSystem::Tell( FileHandle_t file )
 	{
 		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Tell: Attempted to tell handle with null file pointer!\n" );
 		return 0;
+	}
+
+	if( pFile->IsPackEntry() )
+	{
+		const auto position = ftell( pFile->GetFile() );
+
+		return static_cast<unsigned int>( position - pFile->GetStartOffset() );
 	}
 
 	return ftell( pFile->GetFile() );
@@ -302,7 +334,7 @@ long CFileSystem::GetFileTime( const char *pFileName )
 
 	for( const auto& searchPath : m_SearchPaths )
 	{
-		path = fs::path( searchPath.szPath ) / pFileName;
+		path = fs::path( searchPath->szPath ) / pFileName;
 
 		if( fs::exists( path, error ) )
 		{
@@ -376,6 +408,13 @@ bool CFileSystem::EndOfFile( FileHandle_t file )
 		return 0;
 	}
 
+	if( pFile->IsPackEntry() )
+	{
+		const auto position = ftell( pFile->GetFile() );
+
+		return position >= pFile->GetStartOffset() + pFile->GetLength();
+	}
+
 	return !!feof( pFile->GetFile() );
 }
 
@@ -393,6 +432,31 @@ int CFileSystem::Read( void* pOutput, int size, FileHandle_t file )
 	{
 		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Read: Attempted to read from handle with null file pointer!\n" );
 		return 0;
+	}
+
+	if( pFile->IsPackEntry() )
+	{
+		if( pFile->GetLength() == 0 )
+			return 0;
+
+		const auto position = ftell( pFile->GetFile() );
+
+		const auto relativePos = position - pFile->GetStartOffset();
+
+		if( relativePos >= pFile->GetLength() )
+			return 0;
+
+		auto result = fread( pOutput, 1, size, pFile->GetFile() );
+
+		if( relativePos + size >= pFile->GetLength() + 1 )
+		{
+			//Adjust the amount that was read to match the file's contents.
+			const auto maxRead = static_cast<size_t>( ( pFile->GetLength() + 1 ) - relativePos );
+
+			result = std::min( result, maxRead );
+		}
+
+		return result;
 	}
 
 	return fread( pOutput, 1, size, pFile->GetFile() );
@@ -424,13 +488,32 @@ char *CFileSystem::ReadLine( char *pOutput, int maxChars, FileHandle_t file )
 	if( !pFile )
 	{
 		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::ReadLine: Attempted to read line from null file handle!\n" );
-		return 0;
+		return nullptr;
 	}
 
 	if( !pFile->IsOpen() )
 	{
 		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::ReadLine: Attempted to read line from handle with null file pointer!\n" );
-		return 0;
+		return nullptr;
+	}
+
+	if( pFile->IsPackEntry() )
+	{
+		if( pFile->GetLength() == 0 )
+			return nullptr;
+
+		const auto position = ftell( pFile->GetFile() );
+
+		const auto relativePos = position - pFile->GetStartOffset();
+
+		if( relativePos >= pFile->GetLength() )
+			return nullptr;
+
+		//The length is the number of bytes in the file, so allow that much to be read.
+		if( relativePos + maxChars >= pFile->GetLength() + 1 )
+		{
+			maxChars = static_cast<int>( ( pFile->GetLength() + 1 ) - relativePos );
+		}
 	}
 
 	return fgets( pOutput, maxChars, pFile->GetFile() );
@@ -544,18 +627,18 @@ const char *CFileSystem::FindNext( FileFindHandle_t handle )
 		//Reached the end of the current path ID.
 		if( data.iterator == fs::recursive_directory_iterator() )
 		{
-			const SearchPath* pPath = data.pCurrentPath ? data.pCurrentPath + 1 : &m_SearchPaths.front();
+			auto path = data.currentPath != SearchPaths_t::const_iterator() ? data.currentPath : m_SearchPaths.begin();
 
 			bool bSetNext = false;
 
-			for( const auto pEnd = &m_SearchPaths.back() + 1; pPath != pEnd; ++pPath )
+			for( auto end = m_SearchPaths.end(); path != end; ++path )
 			{
-				if( *data.szPathID && ( !pPath->pszPathID || strcmp( data.szPathID, pPath->pszPathID ) != 0 ) )
+				if( *data.szPathID && ( !( *path )->pszPathID || strcmp( data.szPathID, ( *path )->pszPathID ) != 0 ) )
 					continue;
 
-				data.pCurrentPath = pPath;
+				data.currentPath = path;
 
-				data.iterator = fs::recursive_directory_iterator( data.pCurrentPath->szPath );
+				data.iterator = fs::recursive_directory_iterator( ( *path )->szPath );
 
 				bSetNext = true;
 				break;
@@ -652,7 +735,7 @@ const char *CFileSystem::GetLocalPath( const char *pFileName, char *pLocalPath, 
 
 	for( const auto& searchPath : m_SearchPaths )
 	{
-		path = fs::path( searchPath.szPath ) / pFileName;
+		path = fs::path( searchPath->szPath ) / pFileName;
 
 		if( fs::exists( path, error ) )
 		{
@@ -708,7 +791,12 @@ bool CFileSystem::GetCurrentDirectory( char* pDirectory, int maxlen )
 	 
 void CFileSystem::PrintOpenedFiles()
 {
-	//TODO
+	for( const auto& file : m_OpenedFiles )
+	{
+		const char* const pszName = !file->GetFileName().empty() ? file->GetFileName().c_str() : "???";
+
+		Warning( FILESYSTEM_WARNING_REPORTUNCLOSED, "File %s was never closed\n", pszName );
+	}
 }
 	 
 void CFileSystem::SetWarningFunc( FileSystemWarningFunc pfnWarning )
@@ -808,15 +896,170 @@ bool CFileSystem::IsAppReadyForOfflinePlay( int appID )
 	return true;
 }
 
+template<typename PackType>
+bool ProcessPackFile( CFileSystem& fileSystem, const char* pszFileName, FILE* pFile, CSearchPath::Entries_t& entries )
+{
+	assert( pFile );
+
+	PackType::Header_t header;
+
+	if( fread( &header, sizeof( header ), 1, pFile ) != 1 )
+	{
+		fileSystem.Warning( FILESYSTEM_WARNING_CRITICAL, "ProcessPackFile(%s): Couldn't read pack file \"%s\" header!n", PackType::Info_t::NAME, pszFileName );
+		return false;
+	}
+
+	header.dirofs = LittleValue( header.dirofs );
+	header.dirlen = LittleValue( header.dirlen );
+
+	if( ( header.dirlen % sizeof( PackType::Entry_t ) ) != 0 )
+	{
+		fileSystem.Warning( FILESYSTEM_WARNING_CRITICAL, "ProcessPackFile(%s): Invalid directory length for \"%s\"\n", PackType::Info_t::NAME, pszFileName );
+		return false;
+	}
+
+	const size_t numFiles = static_cast<size_t>( header.dirlen / sizeof( PackType::Entry_t ) );
+
+	if( numFiles > PackType::MAX_FILES )
+	{
+		fileSystem.Warning( FILESYSTEM_WARNING_CRITICAL, "ProcessPackFile(%s): Too many files in pack file \"%s\" (Max %u, got %u)\n", 
+							PackType::Info_t::NAME, pszFileName, PackType::MAX_FILES, numFiles );
+		return false;
+	}
+
+	//TODO: handle 64 bit file support properly. - Solokiller
+	fseek( pFile, static_cast<long>( header.dirofs ), SEEK_SET );
+
+	auto packEntries = std::make_unique<PackType::Entry_t[]>( numFiles );
+
+	if( fread( packEntries.get(), sizeof( PackType::Entry_t ), numFiles, pFile ) != numFiles )
+	{
+		fileSystem.Warning( FILESYSTEM_WARNING_CRITICAL, "ProcessPackFile(%s): Couldn't read directory entries from \"%s\"\n", PackType::Info_t::NAME, pszFileName );
+		return false;
+	}
+
+	for( size_t uiIndex = 0; uiIndex < numFiles; ++uiIndex )
+	{
+		auto& packEntry = packEntries[ uiIndex ];
+
+		auto entry = std::make_unique<CPackFileEntry>( std::move( fs::path( packEntry.szFileName ).make_preferred().u8string() ), packEntry.filepos, packEntry.filelen );
+
+		entries.emplace( std::make_pair( entry->GetFileName().c_str(), std::move( entry ) ) );
+	}
+
+	return true;
+}
+
 bool CFileSystem::AddPackFile( const char *fullpath, const char *pathID )
 {
-	//TODO
-	return false;
+	if( !fullpath )
+		return false;
+
+	CFileHandle file( *this, fullpath, "rb", true );
+
+	if( !file.IsOpen() )
+		return false;
+
+	pack::PackType type;
+
+	{
+		pack::Header_t header;
+
+		if( fread( &header, sizeof( header ), 1, file.GetFile() ) != 1 )
+		{
+			Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::AddPackFile: Couldn't read pack file \"%s\" identifier\n", fullpath );
+			return false;
+		}
+
+		type = pack::IdentifyPackType( header );
+	}
+
+	if( type == pack::PackType::NOT_A_PACK )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::AddPackFile: \"%s\" is not a pack file\n", fullpath );
+		return false;
+	}
+
+	rewind( file.GetFile() );
+
+	CSearchPath::Entries_t entries;
+
+	bool bSuccess = false;
+
+	switch( type )
+	{
+	case pack::PackType::PACK_32BIT:	bSuccess = ProcessPackFile<pack::Pack32_t>( *this, fullpath, file.GetFile(), entries ); break;
+	case pack::PackType::PACK_64BIT:	bSuccess = ProcessPackFile<pack::Pack64_t>( *this, fullpath, file.GetFile(), entries ); break;
+	}
+
+	if( !bSuccess )
+	{
+		return false;
+	}
+
+	auto path = std::make_unique<CSearchPath>();
+
+	fs::path osPath( fullpath );
+
+	osPath.make_preferred();
+
+	strncpy( path->szPath, osPath.u8string().c_str(), sizeof( path->szPath ) );
+	path->szPath[ sizeof( path->szPath ) - 1 ] = '\0';
+
+	path->pszPathID = pathID;
+
+	path->flags = SearchPathFlag::READ_ONLY | SearchPathFlag::IS_PACK_FILE;
+
+	path->packFile = std::make_unique<CFileHandle>( std::move( file ) );
+
+	path->packEntries = std::move( entries );
+
+	m_SearchPaths.emplace_back( std::move( path ) );
+
+	return true;
 }
 
 FileHandle_t CFileSystem::OpenFromCacheForRead( const char *pFileName, const char *pOptions, const char *pathID )
 {
-	//TODO
+	if( !pFileName || !pOptions )
+		return FILESYSTEM_INVALID_HANDLE;
+
+	const bool bIsWrite = strchr( pOptions, 'w' ) != nullptr;
+
+	if( bIsWrite )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::OpenFromCacheForRead: Tried to open file \"%s\" with write option!\n", pFileName );
+		return FILESYSTEM_INVALID_HANDLE;
+	}
+
+	fs::path path;
+
+	for( const auto& searchPath : m_SearchPaths )
+	{
+		if( !( searchPath->flags & SearchPathFlag::IS_PACK_FILE ) )
+			continue;
+
+		if( pathID && ( !searchPath->pszPathID || strcmp( pathID, searchPath->pszPathID ) != 0 ) )
+			continue;
+
+		path = fs::path( pFileName );
+
+		path.make_preferred();
+
+		auto szFileName = path.u8string();
+
+		auto it = searchPath->packEntries.find( szFileName.c_str() );
+
+		if( it == searchPath->packEntries.end() )
+			continue;
+
+		CFileHandle file( *this, std::move( szFileName ), searchPath->packFile->GetFile(), it->second->GetStartOffset(), it->second->GetLength() );
+
+		m_OpenedFiles.emplace_back( std::make_unique<CFileHandle>( std::move( file ) ) );
+
+		return reinterpret_cast<FileHandle_t>( m_OpenedFiles.back().get() );
+	}
+
 	return FILESYSTEM_INVALID_HANDLE;
 }
 
@@ -850,11 +1093,11 @@ CFileSystem::SearchPaths_t::const_iterator CFileSystem::FindSearchPath( const ch
 {
 	for( auto it = m_SearchPaths.begin(), end = m_SearchPaths.end(); it != end; ++it )
 	{
-		if( stricmp( pszPath, it->szPath ) == 0 )
+		if( stricmp( pszPath, ( *it )->szPath ) == 0 )
 		{
 			if( !bCheckPathID ||
-				( ( pszPathID == nullptr && it->pszPathID == nullptr ) ||
-				( ( pszPathID != nullptr && it->pszPathID != nullptr ) && strcmp( pszPathID, it->pszPathID ) == 0 ) ) )
+				( ( pszPathID == nullptr && ( *it )->pszPathID == nullptr ) ||
+				( ( pszPathID != nullptr && ( *it )->pszPathID != nullptr ) && strcmp( pszPathID, ( *it )->pszPathID ) == 0 ) ) )
 				return it;
 		}
 	}
@@ -869,26 +1112,30 @@ bool CFileSystem::AddSearchPath( const char *pPath, const char *pathID, const bo
 		return false;
 	}
 
+	//Despite the documentation stating that bsp files are supported, the filesystem doesn't actually support it. Sorry. - Solokiller
+	if( strstr( pPath, ".bsp" ) )
+		return false;
+
 	if( FindSearchPath( pPath, true, pathID ) != m_SearchPaths.end() )
 		return false;
 
-	SearchPath path;
+	auto path = std::make_unique<CSearchPath>();
 
 	fs::path osPath( pPath );
 
 	osPath.make_preferred();
 
-	strncpy( path.szPath, osPath.u8string().c_str(), sizeof( path.szPath ) );
-	path.szPath[ sizeof( path.szPath ) - 1 ] = '\0';
+	strncpy( path->szPath, osPath.u8string().c_str(), sizeof( path->szPath ) );
+	path->szPath[ sizeof( path->szPath ) - 1 ] = '\0';
 
-	path.pszPathID = pathID;
+	path->pszPathID = pathID;
 
-	path.flags = SearchPathFlag::NONE;
+	path->flags = SearchPathFlag::NONE;
 
 	if( bReadOnly )
-		path.flags |= SearchPathFlag::READ_ONLY;
+		path->flags |= SearchPathFlag::READ_ONLY;
 
-	m_SearchPaths.emplace_back( path );
+	m_SearchPaths.emplace_back( std::move( path ) );
 
 	return true;
 }

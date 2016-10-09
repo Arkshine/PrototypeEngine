@@ -12,6 +12,7 @@
 #include "Platform.h"
 
 #include "CFileHandle.h"
+#include "CSearchPath.h"
 
 #include "FileSystem.h"
 
@@ -20,25 +21,7 @@
 class CFileSystem : public IFileSystem
 {
 private:
-	typedef uint32_t SearchPathFlags_t;
-
-	struct SearchPathFlag
-	{
-		enum : SearchPathFlags_t
-		{
-			NONE		= 0,
-			READ_ONLY	= 1 << 0,
-		};
-	};
-
-	struct SearchPath
-	{
-		char szPath[ MAX_PATH ];
-
-		const char* pszPathID;
-
-		SearchPathFlags_t flags;
-	};
+	typedef std::vector<std::unique_ptr<CSearchPath>> SearchPaths_t;
 
 	typedef uint32_t FindFileFlags_t;
 
@@ -61,12 +44,11 @@ private:
 
 		char szPathID[ MAX_PATH ];
 
-		const SearchPath* pCurrentPath = nullptr;
+		SearchPaths_t::const_iterator currentPath = SearchPaths_t::const_iterator();
 
 		FindFileFlags_t flags = FindFileFlag::VALID;
 	};
 
-	typedef std::vector<SearchPath> SearchPaths_t;
 	typedef std::vector<std::unique_ptr<CFileHandle>> OpenedFiles_t;
 	typedef std::vector<std::unique_ptr<FindFileData>> FindFiles_t;
 

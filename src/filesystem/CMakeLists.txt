@@ -15,6 +15,9 @@ add_sources(
 	CFileHandle.cpp
 	CFileSystem.h
 	CFileSystem.cpp
+	CPackFileEntry.h
+	CSearchPath.h
+	PackFile.h
 )
 
 add_subdirectory( ${CMAKE_SOURCE_DIR}/external/HL_SDK/public HL_SDK/public )

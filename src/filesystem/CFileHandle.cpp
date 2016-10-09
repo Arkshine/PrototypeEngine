@@ -29,26 +29,46 @@ CFileHandle::CFileHandle( CFileSystem& fileSystem, const char* pszFileName, cons
 	}
 }
 
-CFileHandle::CFileHandle( CFileSystem& fileSystem, const char* pszFileName, FILE* pFile, uint64_t uiStartOffset, uint64_t uiLength )
+CFileHandle::CFileHandle( CFileSystem& fileSystem, std::string&& szFileName, FILE* pFile, uint64_t uiStartOffset, uint64_t uiLength )
 {
-	assert( pszFileName );
 	assert( pFile );
 
 	m_pFile = pFile;
 
 	if( m_pFile )
 	{
-		m_szFileName = pszFileName;
+		m_szFileName = std::move( szFileName );
 
 		m_uiStartOffset = uiStartOffset;
 		m_uiLength = uiLength;
 
 		m_Flags |= FileHandleFlag::IS_PACK_ENTRY;
+
+		//TODO: use 64 bit seek - Solokiller
+		fseek( m_pFile, static_cast<long>( m_uiStartOffset ), SEEK_SET );
 	}
 	else
 	{
-		fileSystem.Warning( FILESYSTEM_WARNING_CRITICAL, "CFileHandle::CFileHandle: Null FILE* for pack file entry \"%s\"!\n", pszFileName );
+		fileSystem.Warning( FILESYSTEM_WARNING_CRITICAL, "CFileHandle::CFileHandle: Null FILE* for pack file entry \"%s\"!\n", szFileName.c_str() );
 	}
+}
+
+CFileHandle::CFileHandle( CFileHandle&& other )
+	: CFileHandle()
+{
+	swap( other );
+}
+
+CFileHandle& CFileHandle::operator=( CFileHandle&& other )
+{
+	if( this != &other )
+	{
+		Close();
+
+		swap( other );
+	}
+
+	return *this;
 }
 
 void CFileHandle::Close()
@@ -66,5 +86,17 @@ void CFileHandle::Close()
 		m_uiStartOffset = m_uiLength = 0;
 
 		m_Flags = FileHandleFlag::NONE;
+	}
+}
+
+void CFileHandle::swap( CFileHandle& other )
+{
+	if( this != &other )
+	{
+		std::swap( m_pFile, other.m_pFile );
+		std::swap( m_szFileName, other.m_szFileName );
+		std::swap( m_uiStartOffset, other.m_uiStartOffset );
+		std::swap( m_uiLength, other.m_uiLength );
+		std::swap( m_Flags, other.m_Flags );
 	}
 }

@@ -45,10 +45,15 @@ public:
 	/**
 	*	Constructs a handle that points to a file with the given name within the given file. The given offset and length are used.
 	*/
-	CFileHandle( CFileSystem& fileSystem, const char* pszFileName, FILE* pFile, uint64_t uiStartOffset, uint64_t uiLength );
+	CFileHandle( CFileSystem& fileSystem, std::string&& szFileName, FILE* pFile, uint64_t uiStartOffset, uint64_t uiLength );
 
-	CFileHandle( CFileHandle&& other ) = default;
-	CFileHandle& operator=( CFileHandle&& other ) = default;
+	CFileHandle( CFileHandle&& other );
+	CFileHandle& operator=( CFileHandle&& other );
+
+	~CFileHandle()
+	{
+		Close();
+	}
 
 	inline FILE* GetFile() { return m_pFile; }
 
@@ -75,6 +80,8 @@ public:
 	bool operator==( const CFileHandle& other ) const;
 
 	bool operator!=( const CFileHandle& other ) const { return !( *this == other ); }
+
+	void swap( CFileHandle& other );
 
 private:
 	FILE* m_pFile = nullptr;

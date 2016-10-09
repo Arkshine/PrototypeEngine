@@ -187,6 +187,8 @@ private:
 
 	bool AddSearchPath( const char *pPath, const char *pathID, const bool bReadOnly );
 
+	void AddPackFiles( const char* pszPath );
+
 private:
 	SearchPaths_t m_SearchPaths;
 	OpenedFiles_t m_OpenedFiles;

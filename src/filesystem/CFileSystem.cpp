@@ -1200,5 +1200,25 @@ bool CFileSystem::AddSearchPath( const char *pPath, const char *pathID, const bo
 
 	m_SearchPaths.emplace_back( std::move( path ) );
 
+	//Add any game pack files present in the path.
+	AddPackFiles( m_SearchPaths.back()->szPath );
+
 	return true;
+}
+
+void CFileSystem::AddPackFiles( const char* pszPath )
+{
+	char szPath[ MAX_PATH ];
+
+	std::error_code error;
+
+	for( size_t uiPakIndex = 0; ; ++uiPakIndex )
+	{
+		snprintf( szPath, sizeof( szPath ), "%s/pak%u.pak", pszPath, uiPakIndex );
+
+		if( !fs::exists( szPath, error ) )
+			break;
+
+		AddPackFile( szPath, "" );
+	}
 }

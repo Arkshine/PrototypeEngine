@@ -174,7 +174,19 @@ set( GAME_BASE_PATH "${STEAMCOMMON}/Half-Life/goldsource2" )
 MESSAGE( STATUS "Base Game Path: ${GAME_BASE_PATH}" )
 
 #Shared preprocessor definitions
+#TODO: There's a file in CMake that can do this called TestBigEndian. See http://stackoverflow.com/questions/3877344/detect-endianness-with-cmake
+#Consider using this
+set( IS_LITTLE_ENDIAN_TARGET "1" CACHE BOOL "Whether the target system is little endian" )
+
+#TODO really need to find a better way to do this
+if( IS_LITTLE_ENDIAN_TARGET )
+	set( IS_LITTLE_ENDIAN_VALUE "1" )
+else()
+	set( IS_LITTLE_ENDIAN_VALUE "0" )
+endif()
+
 set( SHARED_DEFS 
+	IS_LITTLE_ENDIAN=${IS_LITTLE_ENDIAN_VALUE}
 )
 
 if( WIN32 )

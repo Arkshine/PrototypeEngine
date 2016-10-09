@@ -1,6 +1,7 @@
 add_sources(
 	ByteSwap.h
 	ByteSwap.cpp
+	CCharacterSet.h
 	CCommand.h
 	CCommand.cpp
 	CNetworkBuffer.h

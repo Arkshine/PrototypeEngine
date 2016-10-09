@@ -3,12 +3,19 @@
 #include "interface.h"
 
 #include "ByteSwap.h"
+#include "CCharacterSet.h"
 #include "PackFile.h"
 #include "StringUtils.h"
 
 #include "CFileSystem.h"
 
 namespace fs = std::experimental::filesystem;
+
+namespace
+{
+static CCharacterSet g_BreakSet( "{}()'" );
+static CCharacterSet g_BreakSetIncludingColons( "{}()':" );
+}
 
 EXPOSE_SINGLE_INTERFACE( CFileSystem, IFileSystem, FILESYSTEM_INTERFACE_VERSION );
 
@@ -772,10 +779,130 @@ const char *CFileSystem::GetLocalPath( const char *pFileName, char *pLocalPath, 
 	return nullptr;
 }
 
+//TODO: Ripped from HLE, should refactor the tokenization code and put it there. - Solokiller
+char* COM_SkipWhitespace( char* pszData )
+{
+	if( !pszData )
+		return nullptr;
+
+	char c;
+
+	while( ( c = *pszData ) <= ' ' )
+	{
+		if( c == '\0' )
+			return nullptr;                    // end of file;
+		++pszData;
+	}
+
+	return pszData;
+}
+
+char* COM_SkipComments( char* pszData, bool& bWasComment )
+{
+	if( !pszData )
+	{
+		bWasComment = false;
+		return nullptr;
+	}
+
+	char c = *pszData;
+
+	// skip // comments
+	if( c == '/' && pszData[ 1 ] == '/' )
+	{
+		while( *pszData && *pszData != '\n' )
+			++pszData;
+		bWasComment = true;
+	}
+	else
+		bWasComment = false;
+
+	if( !( *pszData ) )
+		return nullptr;
+
+	return pszData;
+}
+
 char *CFileSystem::ParseFile( char* pFileBytes, char* pToken, bool* pWasQuoted )
 {
-	//TODO
-	return nullptr;
+	char* result = pFileBytes;
+
+	if( pWasQuoted )
+		*pWasQuoted = false;
+
+	if( !pFileBytes )
+		return nullptr;
+
+	*pToken = '\0';
+
+	{
+		bool bWasComment;
+
+		do
+		{
+			// skip whitespace
+			result = COM_SkipWhitespace( result );
+
+			if( !result )
+				return nullptr;
+
+			// skip // comments
+			result = COM_SkipComments( result, bWasComment );
+
+			if( !result )
+				return nullptr;
+		}
+		while( bWasComment );
+	}
+
+	if( *result != '"' )
+	{
+		if( g_BreakSetIncludingColons.InSet( *result ) )
+		{
+			pToken[ 0 ] = *result;
+			pToken[ 1 ] = '\0';
+			++result;
+		}
+		else
+		{
+			size_t uiIndex;
+
+			for( uiIndex = 0; *result && *result > ' ' && !g_BreakSetIncludingColons.InSet( *result ); ++uiIndex, ++result )
+			{
+				pToken[ uiIndex ] = *result;
+			}
+
+			pToken[ uiIndex ] = '\0';
+		}
+
+		return result;
+	}
+
+	if( pWasQuoted )
+		*pWasQuoted = true;
+
+	++result;
+
+	if( *result != '"' )
+	{
+		size_t uiIndex;
+
+		for( uiIndex = 0; *result && *result != '"'; ++uiIndex, ++result )
+		{
+			pToken[ uiIndex ] = *result;
+		}
+
+		//Skip closing quote.
+		++result;
+
+		pToken[ uiIndex ] = '\0';
+	}
+	else
+	{
+		pToken[ 0 ] = '\0';
+	}
+
+	return result;
 }
 	 
 bool CFileSystem::FullPathToRelativePath( const char *pFullpath, char *pRelative )

@@ -86,7 +86,7 @@ endif()
 
 find_library( SDL2 ${SDL2_NAME} PATHS ${CMAKE_SOURCE_DIR}/external/SDL2/lib/ "${STEAMCOMMON}/Half-Life/" )
 
-find_library( GLEW2 glew32s PATHS ${CMAKE_SOURCE_DIR}/external/GLEW/lib/ )
+find_library( GLEW2 glew32s ${CMAKE_SHARED_LIBRARY_PREFIX}GLEW${CMAKE_STATIC_LIBRARY_SUFFIX} PATHS ${CMAKE_SOURCE_DIR}/external/GLEW/lib/ )
 
 #Link with engine dependencies
 target_link_libraries( Engine 

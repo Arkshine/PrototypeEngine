@@ -780,7 +780,38 @@ char *CFileSystem::ParseFile( char* pFileBytes, char* pToken, bool* pWasQuoted )
 	 
 bool CFileSystem::FullPathToRelativePath( const char *pFullpath, char *pRelative )
 {
-	//TODO
+	if( !pRelative )
+		return false;
+
+	if( !pFullpath || !( *pFullpath ) )
+	{
+		*pRelative = '\0';
+		return false;
+	}
+
+	std::string szFullpath = fs::path( pFullpath ).make_preferred().u8string();
+
+	for( auto it = m_SearchPaths.begin(), end = m_SearchPaths.end(); it != end; ++it )
+	{
+		const char* const pszPath = it->get()->szPath;
+
+		const auto uiLength = strlen( pszPath );
+
+		if( strnicmp( szFullpath.c_str(), pszPath, uiLength ) == 0 )
+		{
+			//If the input path is identical to the search path, this can happen.
+			//This should only be used to get relative paths to files and perhaps directories, so it's rather useless to return empty paths.
+			if( szFullpath.length() > uiLength )
+			{
+				//TODO: This is really unsafe. The MAX_PATH usage is a little better than strcpy, but still. - Solokiller
+				//Skip the slash that separates the search path from the relative path.
+				strncpy( pRelative, &szFullpath[ uiLength + 1 ], MAX_PATH );
+				pRelative[ MAX_PATH - 1 ] = '\0';
+				return true;
+			}
+		}
+	}
+
 	return false;
 }
 	 
@@ -1142,6 +1173,18 @@ bool CFileSystem::AddSearchPath( const char *pPath, const char *pathID, const bo
 	auto path = std::make_unique<CSearchPath>();
 
 	fs::path osPath( pPath );
+
+	//Convert all search paths to the absolute representation, fully resolved.
+	std::error_code error;
+
+	osPath = fs::canonical( osPath, error );
+
+	//Don't want to add empty paths when non-existent search paths are added.
+	if( error || osPath.empty() )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::AddSearchPath: Couldn't convert path \"%s\" to its canonial representation\n", pPath );
+		return false;
+	}
 
 	osPath.make_preferred();
 

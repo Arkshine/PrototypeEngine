@@ -67,7 +67,8 @@ find_library( VGUI1 ${VGUI1_NAME} PATHS ${CMAKE_SOURCE_DIR}/external/VGUI1/lib/w
 if( NOT WIN32 )
 	#This mucking about is needed because CMake can't figure out how to handle libraries not named lib<name>.so
 	if( NOT APPLE )
-		set( VGUI1 "-l:\"${VGUI1}\"" )
+		#Why does this work with -l in the HLE project? This is bullshit man!
+		set( VGUI1 "-L:\"${VGUI1}\"" )
 	else()
 		#Do nothing for OSX.
 	endif()

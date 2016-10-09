@@ -4,6 +4,7 @@
 
 #include "ByteSwap.h"
 #include "PackFile.h"
+#include "StringUtils.h"
 
 #include "CFileSystem.h"
 
@@ -567,45 +568,29 @@ const char *CFileSystem::FindFirst( const char *pWildCard, FileFindHandle_t *pHa
 
 	FindFileData data;
 
-	std::string szWildCard( pWildCard );
+	data.szFilter = std::move( fs::path( pWildCard ).make_preferred().u8string() );
 
-	//Replace * with .* for regex.
-	//TODO: make utility function. - Solokiller
-	for( std::string::size_type index = 0; ( index = szWildCard.find( '*', index ) ) != std::string::npos; )
+	if( pathID )
 	{
-		szWildCard.replace( index, 1, ".*" );
-
-		index += 2;
+		strncpy( data.szPathID, pathID, sizeof( data.szPathID ) );
+		data.szPathID[ sizeof( data.szPathID ) - 1 ] = '\0';
+	}
+	else
+	{
+		data.szPathID[ 0 ] = '\0';
 	}
 
-	try
-	{
-		data.filter = std::regex( fs::path( szWildCard ).make_preferred().u8string() );
+	data.currentPath = m_SearchPaths.end();
 
-		if( pathID )
-		{
-			strncpy( data.szPathID, pathID, sizeof( data.szPathID ) );
-			data.szPathID[ sizeof( data.szPathID ) - 1 ] = '\0';
-		}
-		else
-		{
-			data.szPathID[ 0 ] = '\0';
-		}
+	m_FindFiles.emplace_back( std::make_unique<FindFileData>( std::move( data ) ) );
 
-		m_FindFiles.emplace_back( std::make_unique<FindFileData>( std::move( data ) ) );
+	*pHandle = m_FindFiles.size() - 1;
 
-		*pHandle = m_FindFiles.size() - 1;
+	if( auto pszFileName = FindNext( *pHandle ) )
+		return pszFileName;
 
-		if( auto pszFileName = FindNext( *pHandle ) )
-			return pszFileName;
-
-		//Nothing found.
-		FindClose( *pHandle );
-	}
-	catch( const std::regex_error& e )
-	{
-		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::FindFirst: Invalid wildcard: %s\n", e.what() );
-	}
+	//Nothing found.
+	FindClose( *pHandle );
 
 	*pHandle = FILESYSTEM_INVALID_FIND_HANDLE;
 
@@ -629,7 +614,7 @@ const char *CFileSystem::FindNext( FileFindHandle_t handle )
 		//Reached the end of the current path ID.
 		if( data.iterator == fs::recursive_directory_iterator() )
 		{
-			auto path = data.currentPath != SearchPaths_t::const_iterator() ? data.currentPath : m_SearchPaths.begin();
+			auto path = data.currentPath != m_SearchPaths.end() ? data.currentPath + 1 : m_SearchPaths.begin();
 
 			bool bSetNext = false;
 
@@ -661,10 +646,17 @@ const char *CFileSystem::FindNext( FileFindHandle_t handle )
 		{
 			data.entry = *data.iterator;
 			data.szFileName = data.entry.path().u8string();
+
+			//Trim the search path so it returns uniform paths for use in I/O.
+			if( *data.currentPath->get()->szPath )
+			{
+				data.szFileName = data.szFileName.substr( strlen( data.currentPath->get()->szPath ) + 1 );
+			}
+
 			++data.iterator;
 
 			//Matches the wildcard.
-			if( std::regex_match( data.szFileName, data.filter ) )
+			if( UTIL_TokenMatches( data.szFileName.c_str(), data.szFilter.c_str() ) )
 				return data.szFileName.c_str();
 		}
 

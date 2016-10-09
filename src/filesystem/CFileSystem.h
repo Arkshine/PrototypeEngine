@@ -5,7 +5,6 @@
 #include <cstdio>
 #include <experimental/filesystem>
 #include <memory>
-#include <regex>
 #include <string>
 #include <vector>
 
@@ -40,11 +39,11 @@ private:
 		std::experimental::filesystem::recursive_directory_iterator iterator;
 		std::experimental::filesystem::directory_entry entry;
 		std::string szFileName;
-		std::regex filter;
+		std::string szFilter;
 
 		char szPathID[ MAX_PATH ];
 
-		SearchPaths_t::const_iterator currentPath = SearchPaths_t::const_iterator();
+		SearchPaths_t::const_iterator currentPath;
 
 		FindFileFlags_t flags = FindFileFlag::VALID;
 	};

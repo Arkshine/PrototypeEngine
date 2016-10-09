@@ -612,7 +612,7 @@ const char *CFileSystem::FindNext( FileFindHandle_t handle )
 	do
 	{
 		//Reached the end of the current path ID.
-		if( data.iterator == fs::recursive_directory_iterator() )
+		if( data.EndOfPath() )
 		{
 			auto path = data.currentPath != m_SearchPaths.end() ? data.currentPath + 1 : m_SearchPaths.begin();
 
@@ -625,7 +625,16 @@ const char *CFileSystem::FindNext( FileFindHandle_t handle )
 
 				data.currentPath = path;
 
-				data.iterator = fs::recursive_directory_iterator( ( *path )->szPath );
+				if( path->get()->IsPackFile() )
+				{
+					data.pack_iterator = path->get()->packEntries.begin();
+					data.flags |= FindFileFlag::IS_PACK_FILE;
+				}
+				else
+				{
+					data.iterator = fs::recursive_directory_iterator( ( *path )->szPath );
+					data.flags &= ~FindFileFlag::IS_PACK_FILE;
+				}
 
 				bSetNext = true;
 				break;
@@ -642,22 +651,40 @@ const char *CFileSystem::FindNext( FileFindHandle_t handle )
 			return nullptr;
 		}
 
-		for( auto end = fs::recursive_directory_iterator(); data.iterator != end; )
+		auto searchPath = ( *data.currentPath ).get();
+
+		if( searchPath->IsPackFile() )
 		{
-			data.entry = *data.iterator;
-			data.szFileName = data.entry.path().u8string();
-
-			//Trim the search path so it returns uniform paths for use in I/O.
-			if( *data.currentPath->get()->szPath )
+			for( auto end = searchPath->packEntries.end(); data.pack_iterator != end; )
 			{
-				data.szFileName = data.szFileName.substr( strlen( data.currentPath->get()->szPath ) + 1 );
+				data.szFileName = data.pack_iterator->second->GetFileName();
+
+				++data.pack_iterator;
+
+				//Matches the wildcard.
+				if( UTIL_TokenMatches( data.szFileName.c_str(), data.szFilter.c_str() ) )
+					return data.szFileName.c_str();
 			}
+		}
+		else
+		{
+			for( auto end = fs::recursive_directory_iterator(); data.iterator != end; )
+			{
+				data.entry = *data.iterator;
+				data.szFileName = data.entry.path().u8string();
 
-			++data.iterator;
+				//Trim the search path so it returns uniform paths for use in I/O.
+				if( *searchPath->szPath )
+				{
+					data.szFileName = data.szFileName.substr( strlen( searchPath->szPath ) + 1 );
+				}
 
-			//Matches the wildcard.
-			if( UTIL_TokenMatches( data.szFileName.c_str(), data.szFilter.c_str() ) )
-				return data.szFileName.c_str();
+				++data.iterator;
+
+				//Matches the wildcard.
+				if( UTIL_TokenMatches( data.szFileName.c_str(), data.szFilter.c_str() ) )
+					return data.szFileName.c_str();
+			}
 		}
 
 		//The directory was completely empty or didn't have matching contents, so go to the next one.

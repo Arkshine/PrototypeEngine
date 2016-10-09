@@ -31,12 +31,28 @@ private:
 			NONE			= 0,
 			END_OF_DATA		= 1 << 0,
 			VALID			= 1 << 1,
+			IS_PACK_FILE	= 1 << 2,
 		};
 	};
 
 	struct FindFileData
 	{
+		bool EndOfPath() const
+		{
+			if( flags & FindFileFlag::IS_PACK_FILE )
+			{
+				return pack_iterator == currentPath->get()->packEntries.end();
+			}
+			else
+			{
+				return iterator == std::experimental::filesystem::recursive_directory_iterator();
+			}
+		}
+
 		std::experimental::filesystem::recursive_directory_iterator iterator;
+		//For pack search paths: the index of the current pack file entry.
+		CSearchPath::Entries_t::const_iterator pack_iterator;
+
 		std::experimental::filesystem::directory_entry entry;
 		std::string szFileName;
 		std::string szFilter;

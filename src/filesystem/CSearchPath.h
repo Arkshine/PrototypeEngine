@@ -33,6 +33,8 @@ struct CSearchPath
 	CSearchPath( CSearchPath&& other ) = default;
 	CSearchPath& operator=( CSearchPath&& other ) = default;
 
+	bool IsPackFile() const { return ( flags & SearchPathFlag::IS_PACK_FILE ) != 0; }
+
 	char szPath[ MAX_PATH ];
 
 	const char* pszPathID;

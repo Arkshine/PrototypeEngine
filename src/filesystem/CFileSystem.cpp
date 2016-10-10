@@ -355,30 +355,12 @@ unsigned int CFileSystem::Size( const char *pFileName )
 
 long CFileSystem::GetFileTime( const char *pFileName )
 {
-	fs::path path;
-
-	std::error_code error;
-
-	for( const auto& searchPath : m_SearchPaths )
-	{
-		path = fs::path( searchPath->szPath ) / pFileName;
-
-		if( fs::exists( path, error ) )
-		{
-			return static_cast<long>( fs::last_write_time( path, error ).time_since_epoch().count() );
-		}
-	}
-
-	return 0;
+	return static_cast<long>( GetFileTimeEx( pFileName ) );
 }
 
 void CFileSystem::FileTimeToString( char* pStrip, int maxCharsIncludingTerminator, long fileTime )
 {
-	time_t time = fileTime;
-	auto pszResult = ctime( &time );
-
-	strncpy( pStrip, pszResult, maxCharsIncludingTerminator );
-	pStrip[ maxCharsIncludingTerminator - 1 ] = '\0';
+	FileTimeToStringEx( pStrip, maxCharsIncludingTerminator, fileTime );
 }
 
 bool CFileSystem::IsOk( FileHandle_t file )
@@ -1057,6 +1039,38 @@ FileHandle_t CFileSystem::OpenFromCacheForRead( const char *pFileName, const cha
 void CFileSystem::AddSearchPathNoWrite( const char *pPath, const char *pathID )
 {
 	AddSearchPath( pPath, pathID, true );
+}
+
+int64_t CFileSystem::GetFileTimeEx( const char *pFileName )
+{
+	fs::path path;
+
+	std::error_code error;
+
+	//TODO: pack file support. - Solokiller
+
+	for( const auto& searchPath : m_SearchPaths )
+	{
+		path = fs::path( searchPath->szPath ) / pFileName;
+
+		if( fs::exists( path, error ) )
+		{
+			//Don't cast to int64_t here so we get a warning if it's incompatible. - Solokiller
+			//Cast to seconds since the write time is returned in different format. - Solokiller
+			return std::chrono::duration_cast<std::chrono::seconds>( fs::last_write_time( path, error ).time_since_epoch() ).count();
+		}
+	}
+
+	return 0;
+}
+
+void CFileSystem::FileTimeToStringEx( char* pStrip, int maxCharsIncludingTerminator, int64_t fileTime )
+{
+	time_t time = fileTime;
+	auto pszResult = ctime( &time );
+
+	strncpy( pStrip, pszResult, maxCharsIncludingTerminator );
+	pStrip[ maxCharsIncludingTerminator - 1 ] = '\0';
 }
 
 const char *CFileSystem::FindFirstEx( const char *pWildCard, FileFindHandle_t *pHandle, FileSystemFindFlags_t flags, const char *pathID )

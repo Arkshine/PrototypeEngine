@@ -30,6 +30,20 @@ class IFileSystem2 : public IFileSystem
 public:
 
 	/**
+	*	Extended version of GetFileTime.
+	*	@return 64 bit version of GetFileTime's return value.
+	*	@see GetFileTime
+	*/
+	virtual int64_t			GetFileTimeEx( const char *pFileName ) = 0;
+
+	/**
+	*	Extended version of FileTimeToString.
+	*	@param fileTime 64 bit file time.
+	*	@see FileTimeToString
+	*/
+	virtual void			FileTimeToStringEx( char* pStrip, int maxCharsIncludingTerminator, int64_t fileTime ) = 0;
+
+	/**
 	*	Extended version of FindFirst.
 	*	@param flags Find flags.
 	*	@see FindFirst

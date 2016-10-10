@@ -184,6 +184,10 @@ public:
 
 	//IFileSystem2
 
+	int64_t			GetFileTimeEx( const char *pFileName ) override;
+
+	void			FileTimeToStringEx( char* pStrip, int maxCharsIncludingTerminator, int64_t fileTime ) override;
+
 	const char		*FindFirstEx( const char *pWildCard, FileFindHandle_t *pHandle, FileSystemFindFlags_t flags, const char *pathID = nullptr ) override;
 
 	bool			FullPathToRelativePathEx( const char *pFullpath, char *pRelative, size_t uiSizeInChars ) override;

@@ -30,6 +30,30 @@ class IFileSystem2 : public IFileSystem
 public:
 
 	/**
+	*	64 bit version of Seek.
+	*	@see Seek
+	*/
+	virtual void			Seek64( FileHandle_t file, int64_t pos, FileSystemSeek_t seekType ) = 0;
+
+	/**
+	*	64 bit version of Tell.
+	*	@see Tell
+	*/
+	virtual uint64_t		Tell64( FileHandle_t file ) = 0;
+
+	/**
+	*	64 bit version of Size.
+	*	@see Size( FileHandle_t file )
+	*/
+	virtual uint64_t		Size64( FileHandle_t file ) = 0;
+
+	/**
+	*	64 bit version of Size.
+	*	@see Size( const char *pFileName )
+	*/
+	virtual uint64_t		Size64( const char *pFileName ) = 0;
+
+	/**
 	*	Extended version of GetFileTime.
 	*	@return 64 bit version of GetFileTime's return value.
 	*	@see GetFileTime

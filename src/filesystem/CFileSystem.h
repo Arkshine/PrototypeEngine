@@ -184,6 +184,14 @@ public:
 
 	//IFileSystem2
 
+	void			Seek64( FileHandle_t file, int64_t pos, FileSystemSeek_t seekType ) override;
+
+	uint64_t		Tell64( FileHandle_t file ) override;
+
+	uint64_t		Size64( FileHandle_t file ) override;
+
+	uint64_t		Size64( const char *pFileName ) override;
+
 	int64_t			GetFileTimeEx( const char *pFileName ) override;
 
 	void			FileTimeToStringEx( char* pStrip, int maxCharsIncludingTerminator, int64_t fileTime ) override;

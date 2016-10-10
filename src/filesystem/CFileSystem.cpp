@@ -245,112 +245,22 @@ void CFileSystem::Close( FileHandle_t file )
 
 void CFileSystem::Seek( FileHandle_t file, int pos, FileSystemSeek_t seekType )
 {
-	auto pFile = reinterpret_cast<CFileHandle*>( file );
-
-	if( !pFile )
-	{
-		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Seek: Attempted to seek null file handle!\n" );
-		return;
-	}
-
-	if( !pFile->IsOpen() )
-	{
-		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Seek: Attempted to seek handle with null file pointer!\n" );
-		return;
-	}
-
-	int64_t position = pos;
-
-	if( pFile->IsPackEntry() )
-	{
-		switch( seekType )
-		{
-		case FILESYSTEM_SEEK_HEAD:
-			{
-				position += pFile->GetStartOffset();
-				break;
-			}
-
-		case FILESYSTEM_SEEK_TAIL:
-			{
-				//Adjust end position to the file's end
-				position += pFile->GetStartOffset() + pFile->GetLength();
-				seekType = FILESYSTEM_SEEK_HEAD;
-				break;
-			}
-		}
-	}
-
-	int origin;
-
-	switch( seekType )
-	{
-	case FILESYSTEM_SEEK_HEAD:		origin = SEEK_SET; break;
-	case FILESYSTEM_SEEK_CURRENT:	origin = SEEK_CUR; break;
-	case FILESYSTEM_SEEK_TAIL:		origin = SEEK_END; break;
-	default:
-		{
-			Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Seek: invalid seek type '%d'\n", seekType );
-			return;
-		}
-	}
-
-	fseek64( pFile->GetFile(), position, origin );
+	Seek64( file, pos, seekType );
 }
 
 unsigned int CFileSystem::Tell( FileHandle_t file )
 {
-	auto pFile = reinterpret_cast<CFileHandle*>( file );
-
-	if( !pFile )
-	{
-		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Tell: Attempted to tell null file handle!\n" );
-		return 0;
-	}
-
-	if( !pFile->IsOpen() )
-	{
-		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Tell: Attempted to tell handle with null file pointer!\n" );
-		return 0;
-	}
-
-	if( pFile->IsPackEntry() )
-	{
-		const auto position = ftell64( pFile->GetFile() );
-
-		return static_cast<unsigned int>( position - pFile->GetStartOffset() );
-	}
-
-	return static_cast<unsigned int>( ftell64( pFile->GetFile() ) );
+	return static_cast<unsigned int>( Tell64( file ) );
 }
 			 
 unsigned int CFileSystem::Size( FileHandle_t file )
 {
-	auto pFile = reinterpret_cast<CFileHandle*>( file );
-
-	if( !pFile )
-	{
-		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Size: Attempted to size null file handle!\n" );
-		return 0;
-	}
-
-	if( !pFile->IsOpen() )
-	{
-		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Size: Attempted to size handle with null file pointer!\n" );
-		return 0;
-	}
-
-	return static_cast<unsigned int>( pFile->GetLength() );
+	return static_cast<unsigned int>( Size64( file ) );
 }
 			 
 unsigned int CFileSystem::Size( const char *pFileName )
 {
-	if( !pFileName )
-		return 0;
-
-	std::error_code error;
-
-	return static_cast<unsigned int>( fs::file_size( pFileName, error ) );
+	return static_cast<unsigned int>( Size64( pFileName ) );
 }
 
 long CFileSystem::GetFileTime( const char *pFileName )
@@ -1039,6 +949,116 @@ FileHandle_t CFileSystem::OpenFromCacheForRead( const char *pFileName, const cha
 void CFileSystem::AddSearchPathNoWrite( const char *pPath, const char *pathID )
 {
 	AddSearchPath( pPath, pathID, true );
+}
+
+void CFileSystem::Seek64( FileHandle_t file, int64_t pos, FileSystemSeek_t seekType )
+{
+	auto pFile = reinterpret_cast<CFileHandle*>( file );
+
+	if( !pFile )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Seek: Attempted to seek null file handle!\n" );
+		return;
+	}
+
+	if( !pFile->IsOpen() )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Seek: Attempted to seek handle with null file pointer!\n" );
+		return;
+	}
+
+	int64_t position = pos;
+
+	if( pFile->IsPackEntry() )
+	{
+		switch( seekType )
+		{
+		case FILESYSTEM_SEEK_HEAD:
+			{
+				position += pFile->GetStartOffset();
+				break;
+			}
+
+		case FILESYSTEM_SEEK_TAIL:
+			{
+				//Adjust end position to the file's end
+				position += pFile->GetStartOffset() + pFile->GetLength();
+				seekType = FILESYSTEM_SEEK_HEAD;
+				break;
+			}
+		}
+	}
+
+	int origin;
+
+	switch( seekType )
+	{
+	case FILESYSTEM_SEEK_HEAD:		origin = SEEK_SET; break;
+	case FILESYSTEM_SEEK_CURRENT:	origin = SEEK_CUR; break;
+	case FILESYSTEM_SEEK_TAIL:		origin = SEEK_END; break;
+	default:
+		{
+			Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Seek: invalid seek type '%d'\n", seekType );
+			return;
+		}
+	}
+
+	fseek64( pFile->GetFile(), position, origin );
+}
+
+uint64_t CFileSystem::Tell64( FileHandle_t file )
+{
+	auto pFile = reinterpret_cast<CFileHandle*>( file );
+
+	if( !pFile )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Tell: Attempted to tell null file handle!\n" );
+		return 0;
+	}
+
+	if( !pFile->IsOpen() )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Tell: Attempted to tell handle with null file pointer!\n" );
+		return 0;
+	}
+
+	if( pFile->IsPackEntry() )
+	{
+		const auto position = ftell64( pFile->GetFile() );
+
+		return position - pFile->GetStartOffset();
+	}
+
+	return ftell64( pFile->GetFile() );
+}
+
+uint64_t CFileSystem::Size64( FileHandle_t file )
+{
+	auto pFile = reinterpret_cast<CFileHandle*>( file );
+
+	if( !pFile )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Size: Attempted to size null file handle!\n" );
+		return 0;
+	}
+
+	if( !pFile->IsOpen() )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::Size: Attempted to size handle with null file pointer!\n" );
+		return 0;
+	}
+
+	return pFile->GetLength();
+}
+
+uint64_t CFileSystem::Size64( const char *pFileName )
+{
+	if( !pFileName )
+		return -1;
+
+	std::error_code error;
+
+	return fs::file_size( pFileName, error );
 }
 
 int64_t CFileSystem::GetFileTimeEx( const char *pFileName )

@@ -15,9 +15,15 @@ namespace
 {
 static CCharacterSet g_BreakSet( "{}()'" );
 static CCharacterSet g_BreakSetIncludingColons( "{}()':" );
+
+static CFileSystem g_FileSystem;
 }
 
-EXPOSE_SINGLE_INTERFACE( CFileSystem, IFileSystem, FILESYSTEM_INTERFACE_VERSION );
+/*
+*	Backwards compatibility: expose the filesystem as both the GoldSource and GoldSource2 version so older code can use it.
+*/
+EXPOSE_SINGLE_INTERFACE_GLOBALVAR( CFileSystem, IFileSystem, FILESYSTEM_INTERFACE_VERSION, g_FileSystem );
+EXPOSE_SINGLE_INTERFACE_GLOBALVAR( CFileSystem, IFileSystem2, FILESYSTEM2_INTERFACE_VERSION, g_FileSystem );
 
 void CFileSystem::RemoveAllSearchPaths()
 {
@@ -900,39 +906,8 @@ char *CFileSystem::ParseFile( char* pFileBytes, char* pToken, bool* pWasQuoted )
 	 
 bool CFileSystem::FullPathToRelativePath( const char *pFullpath, char *pRelative )
 {
-	if( !pRelative )
-		return false;
-
-	if( !pFullpath || !( *pFullpath ) )
-	{
-		*pRelative = '\0';
-		return false;
-	}
-
-	std::string szFullpath = fs::path( pFullpath ).make_preferred().u8string();
-
-	for( auto it = m_SearchPaths.begin(), end = m_SearchPaths.end(); it != end; ++it )
-	{
-		const char* const pszPath = it->get()->szPath;
-
-		const auto uiLength = strlen( pszPath );
-
-		if( strnicmp( szFullpath.c_str(), pszPath, uiLength ) == 0 )
-		{
-			//If the input path is identical to the search path, this can happen.
-			//This should only be used to get relative paths to files and perhaps directories, so it's rather useless to return empty paths.
-			if( szFullpath.length() > uiLength )
-			{
-				//TODO: This is really unsafe. The MAX_PATH usage is a little better than strcpy, but still. - Solokiller
-				//Skip the slash that separates the search path from the relative path.
-				strncpy( pRelative, &szFullpath[ uiLength + 1 ], MAX_PATH );
-				pRelative[ MAX_PATH - 1 ] = '\0';
-				return true;
-			}
-		}
-	}
-
-	return false;
+	//Assume relative path is MAX_PATH large. - Solokiller
+	return FullPathToRelativePathEx( pFullpath, pRelative, MAX_PATH );
 }
 	 
 bool CFileSystem::GetCurrentDirectory( char* pDirectory, int maxlen )
@@ -1096,6 +1071,42 @@ FileHandle_t CFileSystem::OpenFromCacheForRead( const char *pFileName, const cha
 void CFileSystem::AddSearchPathNoWrite( const char *pPath, const char *pathID )
 {
 	AddSearchPath( pPath, pathID, true );
+}
+
+bool CFileSystem::FullPathToRelativePathEx( const char *pFullpath, char *pRelative, size_t uiSizeInChars )
+{
+	if( !pRelative || uiSizeInChars <= 0 )
+		return false;
+
+	if( !pFullpath || !( *pFullpath ) )
+	{
+		*pRelative = '\0';
+		return false;
+	}
+
+	std::string szFullpath = fs::path( pFullpath ).make_preferred().u8string();
+
+	for( auto it = m_SearchPaths.begin(), end = m_SearchPaths.end(); it != end; ++it )
+	{
+		const char* const pszPath = it->get()->szPath;
+
+		const auto uiLength = strlen( pszPath );
+
+		if( strnicmp( szFullpath.c_str(), pszPath, uiLength ) == 0 )
+		{
+			//If the input path is identical to the search path, this can happen.
+			//This should only be used to get relative paths to files and perhaps directories, so it's rather useless to return empty paths.
+			if( szFullpath.length() > uiLength )
+			{
+				//Skip the slash that separates the search path from the relative path.
+				strncpy( pRelative, &szFullpath[ uiLength + 1 ], uiSizeInChars );
+				pRelative[ uiSizeInChars - 1 ] = '\0';
+				return true;
+			}
+		}
+	}
+
+	return false;
 }
 
 void CFileSystem::Warning( FileWarningLevel_t level, const char* pszFormat, ... )

@@ -19,7 +19,7 @@
 #include "Logging.h"
 #include "SteamWrapper.h"
 
-#include "FileSystem.h"
+#include "FileSystem2.h"
 
 #include "VGUI1/vgui_loadtga.h"
 
@@ -210,7 +210,7 @@ bool CEngine::LoadFileSystem()
 		return false;
 	}
 
-	g_pFileSystem = static_cast<IFileSystem*>( filesystemFactory( FILESYSTEM_INTERFACE_VERSION, nullptr ) );
+	g_pFileSystem = static_cast<IFileSystem2*>( filesystemFactory( FILESYSTEM2_INTERFACE_VERSION, nullptr ) );
 
 	if( !g_pFileSystem )
 	{

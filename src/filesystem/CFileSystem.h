@@ -13,11 +13,11 @@
 #include "CFileHandle.h"
 #include "CSearchPath.h"
 
-#include "FileSystem.h"
+#include "FileSystem2.h"
 
 #undef SearchPath
 
-class CFileSystem : public IFileSystem
+class CFileSystem : public IFileSystem2
 {
 private:
 	typedef std::vector<std::unique_ptr<CSearchPath>> SearchPaths_t;
@@ -178,6 +178,12 @@ public:
 	FileHandle_t	OpenFromCacheForRead( const char *pFileName, const char *pOptions, const char *pathID = nullptr ) override;
 
 	void			AddSearchPathNoWrite( const char *pPath, const char *pathID ) override;
+
+	//IFileSystem2
+
+	bool			FullPathToRelativePathEx( const char *pFullpath, char *pRelative, size_t uiSizeInChars ) override;
+
+	//CFileSystem
 
 	void Warning( FileWarningLevel_t level, const char* pszFormat, ... );
 

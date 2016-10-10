@@ -8,7 +8,7 @@
 
 #include "VGUI1/CVGUI1Surface.h"
 
-class IFileSystem;
+class IFileSystem2;
 
 /**
 *	The command buffer.
@@ -20,6 +20,6 @@ extern CEngine g_Engine;
 
 extern CVGUI1Surface* g_pVGUI1Surface;
 
-extern IFileSystem* g_pFileSystem;
+extern IFileSystem2* g_pFileSystem;
 
 #endif //ENGINE_ENGINE_H

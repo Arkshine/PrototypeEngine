@@ -1209,8 +1209,7 @@ bool CFileSystem::PreparePackFile( const char* pszFullPath, const char* pszPathI
 		return false;
 	}
 
-	//TODO: be kind, don't rewind. seek back to the position used at the beginning of this function. - Solokiller
-	rewind( file.GetFile() );
+	fseek64( file.GetFile(), file.GetStartOffset() + offset, SEEK_SET );
 
 	CSearchPath::Entries_t entries;
 

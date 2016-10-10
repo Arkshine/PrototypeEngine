@@ -28,10 +28,11 @@ private:
 	{
 		enum : FindFileFlags_t
 		{
-			NONE			= 0,
-			END_OF_DATA		= 1 << 0,
-			VALID			= 1 << 1,
-			IS_PACK_FILE	= 1 << 2,
+			NONE					= 0,
+			END_OF_DATA				= 1 << 0,
+			VALID					= 1 << 1,
+			IS_PACK_FILE			= 1 << 2,
+			SKIP_IDENTICAL_PATHS	= 1 << 3,
 		};
 	};
 
@@ -62,6 +63,8 @@ private:
 		SearchPaths_t::const_iterator currentPath;
 
 		FindFileFlags_t flags = FindFileFlag::VALID;
+
+		std::vector<const char*> searchedPaths;
 	};
 
 	typedef std::vector<std::unique_ptr<CFileHandle>> OpenedFiles_t;
@@ -180,6 +183,8 @@ public:
 	void			AddSearchPathNoWrite( const char *pPath, const char *pathID ) override;
 
 	//IFileSystem2
+
+	const char		*FindFirstEx( const char *pWildCard, FileFindHandle_t *pHandle, FileSystemFindFlags_t flags, const char *pathID = nullptr ) override;
 
 	bool			FullPathToRelativePathEx( const char *pFullpath, char *pRelative, size_t uiSizeInChars ) override;
 

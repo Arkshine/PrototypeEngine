@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cassert>
 
 #include "interface.h"
@@ -574,38 +575,7 @@ int CFileSystem::FPrintf( FileHandle_t file, char *pFormat, ... )
 
 const char *CFileSystem::FindFirst( const char *pWildCard, FileFindHandle_t *pHandle, const char *pathID )
 {
-	if( !pWildCard || !pHandle )
-		return nullptr;
-
-	FindFileData data;
-
-	data.szFilter = std::move( fs::path( pWildCard ).make_preferred().u8string() );
-
-	if( pathID )
-	{
-		strncpy( data.szPathID, pathID, sizeof( data.szPathID ) );
-		data.szPathID[ sizeof( data.szPathID ) - 1 ] = '\0';
-	}
-	else
-	{
-		data.szPathID[ 0 ] = '\0';
-	}
-
-	data.currentPath = m_SearchPaths.end();
-
-	m_FindFiles.emplace_back( std::make_unique<FindFileData>( std::move( data ) ) );
-
-	*pHandle = m_FindFiles.size() - 1;
-
-	if( auto pszFileName = FindNext( *pHandle ) )
-		return pszFileName;
-
-	//Nothing found.
-	FindClose( *pHandle );
-
-	*pHandle = FILESYSTEM_INVALID_FIND_HANDLE;
-
-	return nullptr;
+	return FindFirstEx( pWildCard, pHandle, FileSystemFindFlag::NONE, pathID );
 }
 
 const char *CFileSystem::FindNext( FileFindHandle_t handle )
@@ -631,23 +601,39 @@ const char *CFileSystem::FindNext( FileFindHandle_t handle )
 
 			for( auto end = m_SearchPaths.end(); path != end; ++path )
 			{
-				if( *data.szPathID && ( !( *path )->pszPathID || strcmp( data.szPathID, ( *path )->pszPathID ) != 0 ) )
+				auto& searchPath = *path;
+
+				if( *data.szPathID && ( !searchPath->pszPathID || strcmp( data.szPathID, searchPath->pszPathID ) != 0 ) )
 					continue;
+
+				if( data.flags & FindFileFlag::SKIP_IDENTICAL_PATHS )
+				{
+					if( std::find_if( data.searchedPaths.begin(), data.searchedPaths.end(), 
+							[ & ]( const char* pszPath )
+							{
+								return strcmp( pszPath, searchPath->szPath ) == 0;
+							}
+					) != data.searchedPaths.end() )
+						continue;
+
+					data.searchedPaths.emplace_back( searchPath->szPath );
+				}
 
 				data.currentPath = path;
 
-				if( path->get()->IsPackFile() )
+				if( searchPath->IsPackFile() )
 				{
-					data.pack_iterator = path->get()->packEntries.begin();
+					data.pack_iterator = searchPath->packEntries.begin();
 					data.flags |= FindFileFlag::IS_PACK_FILE;
 				}
 				else
 				{
-					data.iterator = fs::recursive_directory_iterator( ( *path )->szPath );
+					data.iterator = fs::recursive_directory_iterator( searchPath->szPath );
 					data.flags &= ~FindFileFlag::IS_PACK_FILE;
 				}
 
 				bSetNext = true;
+
 				break;
 			}
 
@@ -1071,6 +1057,46 @@ FileHandle_t CFileSystem::OpenFromCacheForRead( const char *pFileName, const cha
 void CFileSystem::AddSearchPathNoWrite( const char *pPath, const char *pathID )
 {
 	AddSearchPath( pPath, pathID, true );
+}
+
+const char *CFileSystem::FindFirstEx( const char *pWildCard, FileFindHandle_t *pHandle, FileSystemFindFlags_t flags, const char *pathID )
+{
+	if( !pWildCard || !pHandle )
+		return nullptr;
+
+	FindFileData data;
+
+	//Note: Not the same constant! - Solokiller
+	if( flags & FileSystemFindFlag::SKIP_IDENTICAL_PATHS )
+		data.flags |= FindFileFlag::SKIP_IDENTICAL_PATHS;
+
+	data.szFilter = std::move( fs::path( pWildCard ).make_preferred().u8string() );
+
+	if( pathID )
+	{
+		strncpy( data.szPathID, pathID, sizeof( data.szPathID ) );
+		data.szPathID[ sizeof( data.szPathID ) - 1 ] = '\0';
+	}
+	else
+	{
+		data.szPathID[ 0 ] = '\0';
+	}
+
+	data.currentPath = m_SearchPaths.end();
+
+	m_FindFiles.emplace_back( std::make_unique<FindFileData>( std::move( data ) ) );
+
+	*pHandle = m_FindFiles.size() - 1;
+
+	if( auto pszFileName = FindNext( *pHandle ) )
+		return pszFileName;
+
+	//Nothing found.
+	FindClose( *pHandle );
+
+	*pHandle = FILESYSTEM_INVALID_FIND_HANDLE;
+
+	return nullptr;
 }
 
 bool CFileSystem::FullPathToRelativePathEx( const char *pFullpath, char *pRelative, size_t uiSizeInChars )

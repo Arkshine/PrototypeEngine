@@ -2,8 +2,25 @@
 #define COMMON_FILESYSTEM2_H
 
 #include <cstddef>
+#include <cstdint>
 
 #include "FileSystem.h"
+
+typedef uint32_t FileSystemFindFlags_t;
+
+namespace FileSystemFindFlag
+{
+enum FileSystemFindFlag : FileSystemFindFlags_t
+{
+	NONE					= 0,
+
+	/**
+	*	Skip identical search paths. 
+	*	Different path IDs can have the same search paths, which can result in the same file being returned multiple times.
+	*/
+	SKIP_IDENTICAL_PATHS	= 1 << 0,
+};
+}
 
 /**
 *	GoldSource2 filesystem interface. Provides extended functionality to the filesystem used by GoldSource.
@@ -11,6 +28,14 @@
 class IFileSystem2 : public IFileSystem
 {
 public:
+
+	/**
+	*	Extended version of FindFirst.
+	*	@param flags Find flags.
+	*	@see FindFirst
+	*	@see FileSystemFindFlag::FileSystemFindFlag
+	*/
+	virtual const char		*FindFirstEx( const char *pWildCard, FileFindHandle_t *pHandle, FileSystemFindFlags_t flags, const char *pathID = nullptr ) = 0;
 
 	/**
 	*	Extended version of FullPathToRelativePath.

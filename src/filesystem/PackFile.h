@@ -119,6 +119,27 @@ private:
 
 typedef Pack<int32_t> Pack32_t;
 typedef Pack<int64_t> Pack64_t;
+
+struct PackAppend_t
+{
+	char identifier[ 8 ];
+
+	int64_t packheaderpos;
+	int64_t originalfilesize;
+};
+
+inline bool IsAppendPack( const PackAppend_t& header )
+{
+	return
+		header.identifier[ 0 ] == 'P' &&
+		header.identifier[ 1 ] == 'A' &&
+		header.identifier[ 2 ] == 'C' &&
+		header.identifier[ 3 ] == 'K' &&
+		header.identifier[ 0 ] == 'A' &&
+		header.identifier[ 1 ] == 'P' &&
+		header.identifier[ 2 ] == 'P' &&
+		header.identifier[ 2 ] == 'E';
+}
 }
 
 #endif //FILESYSTEM_PACKFILE_H

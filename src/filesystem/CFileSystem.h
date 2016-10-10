@@ -187,6 +187,10 @@ private:
 
 	bool AddSearchPath( const char *pPath, const char *pathID, const bool bReadOnly );
 
+	bool PreparePackFile( const char* pszFullPath, const char* pszPathID, CFileHandle& file, int64_t offset );
+
+	bool AddPackFile( const char* pszFullPath, const char* pszPathID, const bool bCheckForAppendPack );
+
 	void AddPackFiles( const char* pszPath );
 
 	CFileHandle* FindFile( CSearchPath& searchPath, const char* pszFileName, const char* pszOptions );

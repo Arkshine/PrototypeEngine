@@ -1150,71 +1150,7 @@ bool ProcessPackFile( CFileSystem& fileSystem, const char* pszFileName, FILE* pF
 
 bool CFileSystem::AddPackFile( const char *fullpath, const char *pathID )
 {
-	if( !fullpath )
-		return false;
-
-	CFileHandle file( *this, fullpath, "rb", true );
-
-	if( !file.IsOpen() )
-		return false;
-
-	pack::PackType type;
-
-	{
-		pack::Header_t header;
-
-		if( fread( &header, sizeof( header ), 1, file.GetFile() ) != 1 )
-		{
-			Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::AddPackFile: Couldn't read pack file \"%s\" identifier\n", fullpath );
-			return false;
-		}
-
-		type = pack::IdentifyPackType( header );
-	}
-
-	if( type == pack::PackType::NOT_A_PACK )
-	{
-		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::AddPackFile: \"%s\" is not a pack file\n", fullpath );
-		return false;
-	}
-
-	rewind( file.GetFile() );
-
-	CSearchPath::Entries_t entries;
-
-	bool bSuccess = false;
-
-	switch( type )
-	{
-	case pack::PackType::PACK_32BIT:	bSuccess = ProcessPackFile<pack::Pack32_t>( *this, fullpath, file.GetFile(), entries ); break;
-	case pack::PackType::PACK_64BIT:	bSuccess = ProcessPackFile<pack::Pack64_t>( *this, fullpath, file.GetFile(), entries ); break;
-	}
-
-	if( !bSuccess )
-	{
-		return false;
-	}
-
-	auto path = std::make_unique<CSearchPath>();
-
-	fs::path osPath( fullpath );
-
-	osPath.make_preferred();
-
-	strncpy( path->szPath, osPath.u8string().c_str(), sizeof( path->szPath ) );
-	path->szPath[ sizeof( path->szPath ) - 1 ] = '\0';
-
-	path->pszPathID = pathID;
-
-	path->flags = SearchPathFlag::READ_ONLY | SearchPathFlag::IS_PACK_FILE;
-
-	path->packFile = std::make_unique<CFileHandle>( std::move( file ) );
-
-	path->packEntries = std::move( entries );
-
-	m_SearchPaths.emplace_back( std::move( path ) );
-
-	return true;
+	return AddPackFile( fullpath, pathID, true );
 }
 
 FileHandle_t CFileSystem::OpenFromCacheForRead( const char *pFileName, const char *pOptions, const char *pathID )
@@ -1335,6 +1271,102 @@ bool CFileSystem::AddSearchPath( const char *pPath, const char *pathID, const bo
 	return true;
 }
 
+bool CFileSystem::PreparePackFile( const char* pszFullPath, const char* pszPathID, CFileHandle& file, int64_t offset )
+{
+	fseek64( file.GetFile(), file.GetStartOffset() + offset, SEEK_SET );
+
+	pack::PackType type;
+
+	{
+		pack::Header_t header;
+
+		if( fread( &header, sizeof( header ), 1, file.GetFile() ) != 1 )
+		{
+			Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::AddPackFile: Couldn't read pack file \"%s\" identifier\n", pszFullPath );
+			return false;
+		}
+
+		type = pack::IdentifyPackType( header );
+	}
+
+	if( type == pack::PackType::NOT_A_PACK )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::AddPackFile: \"%s\" is not a pack file\n", pszFullPath );
+		return false;
+	}
+
+	rewind( file.GetFile() );
+
+	CSearchPath::Entries_t entries;
+
+	bool bSuccess = false;
+
+	switch( type )
+	{
+	case pack::PackType::PACK_32BIT:	bSuccess = ProcessPackFile<pack::Pack32_t>( *this, pszFullPath, file.GetFile(), entries ); break;
+	case pack::PackType::PACK_64BIT:	bSuccess = ProcessPackFile<pack::Pack64_t>( *this, pszFullPath, file.GetFile(), entries ); break;
+	}
+
+	if( !bSuccess )
+	{
+		return false;
+	}
+
+	auto path = std::make_unique<CSearchPath>();
+
+	fs::path osPath( pszFullPath );
+
+	osPath.make_preferred();
+
+	strncpy( path->szPath, osPath.u8string().c_str(), sizeof( path->szPath ) );
+	path->szPath[ sizeof( path->szPath ) - 1 ] = '\0';
+
+	path->pszPathID = pszPathID;
+
+	path->flags = SearchPathFlag::READ_ONLY | SearchPathFlag::IS_PACK_FILE;
+
+	path->packFile = std::make_unique<CFileHandle>( std::move( file ) );
+
+	path->packEntries = std::move( entries );
+
+	m_SearchPaths.emplace_back( std::move( path ) );
+
+	return true;
+}
+
+bool CFileSystem::AddPackFile( const char* pszFullPath, const char* pszPathID, const bool bCheckForAppendPack )
+{
+	if( !pszFullPath )
+		return false;
+
+	CFileHandle file( *this, pszFullPath, "rb", true );
+
+	if( !file.IsOpen() )
+		return false;
+
+	int64_t iOffset = 0;
+
+	if( bCheckForAppendPack )
+	{
+		pack::PackAppend_t header;
+
+		fseek64( file.GetFile(), -static_cast<int64_t>( sizeof( header ) ), SEEK_END );
+
+		if( fread( &header, sizeof( header ), 1, file.GetFile() ) != 1 )
+		{
+			Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::AddPackFile: Failed to read pack append header for pack file \"%s\"!\n", pszFullPath );
+			return false;
+		}
+
+		if( pack::IsAppendPack( header ) )
+		{
+			iOffset = header.packheaderpos;
+		}
+	}
+
+	return PreparePackFile( pszFullPath, pszPathID, file, iOffset );
+}
+
 void CFileSystem::AddPackFiles( const char* pszPath )
 {
 	char szPath[ MAX_PATH ];
@@ -1348,7 +1380,7 @@ void CFileSystem::AddPackFiles( const char* pszPath )
 		if( !fs::exists( szPath, error ) )
 			break;
 
-		AddPackFile( szPath, "" );
+		AddPackFile( szPath, "", false );
 	}
 }
 

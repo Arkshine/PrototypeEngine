@@ -1,11 +1,13 @@
 #ifndef ENGINE_CENGINE_H
 #define ENGINE_CENGINE_H
 
-#include <filesystem>
+#include <experimental/filesystem>
 
 #include <SDL2/SDL.h>
 
 #include "Platform.h"
+
+#include "lib/CLibrary.h"
 
 namespace vgui
 {
@@ -40,6 +42,10 @@ public:
 private:
 	bool RunEngine( const bool bIsListenServer );
 
+	bool LoadFileSystem();
+
+	bool SetupFileSystem();
+
 	static SDL_Window* FindEngineWindow();
 
 	bool CreateGameWindow();
@@ -65,6 +71,8 @@ private:
 	SDL_GLContext m_hGLContext = nullptr;
 
 	vgui::Panel* m_pRootPanel = nullptr;
+
+	CLibrary m_FileSystemLib;
 
 private:
 	CEngine( const CEngine& ) = delete;

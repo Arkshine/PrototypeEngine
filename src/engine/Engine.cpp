@@ -12,3 +12,5 @@ CEngine g_Engine;
 static CVGUI1App g_VGUI1App;
 
 CVGUI1Surface* g_pVGUI1Surface = nullptr;
+
+IFileSystem* g_pFileSystem = nullptr;

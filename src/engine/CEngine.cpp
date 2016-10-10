@@ -15,8 +15,11 @@
 #include "Common.h"
 #include "Engine.h"
 #include "GLUtils.h"
+#include "interface.h"
 #include "Logging.h"
 #include "SteamWrapper.h"
+
+#include "FileSystem.h"
 
 #include "VGUI1/vgui_loadtga.h"
 
@@ -79,8 +82,19 @@ bool CEngine::RunEngine( const bool bIsListenServer )
 	}
 
 	//TODO: until we can draw the console onscreen, use a console window. - Solokiller
+#ifdef WIN32
 	AllocConsole();
 	freopen( "CONOUT$", "w", stdout );
+#endif
+
+	if( !LoadFileSystem() )
+		return false;
+
+	if( !SetupFileSystem() )
+	{
+		Msg( "Failed to set up filesystem\n" );
+		return false;
+	}
 
 	if( bIsListenServer )
 	{
@@ -176,6 +190,46 @@ bool CEngine::RunEngine( const bool bIsListenServer )
 
 		SDL_Quit();
 	}
+
+	return true;
+}
+
+bool CEngine::LoadFileSystem()
+{
+	if( !m_FileSystemLib.Load( CLibArgs( "FileSystem" ).DisablePrefixes( true ) ) )
+	{
+		Msg( "Couldn't load FileSystem: %s\n", CLibrary::GetLoadErrorDescription() );
+		return false;
+	}
+
+	auto filesystemFactory = reinterpret_cast<CreateInterfaceFn>( m_FileSystemLib.GetFunctionAddress( CREATEINTERFACE_PROCNAME ) );
+
+	if( !filesystemFactory )
+	{
+		Msg( "Couldn't find filesystem factory\n" );
+		return false;
+	}
+
+	g_pFileSystem = static_cast<IFileSystem*>( filesystemFactory( FILESYSTEM_INTERFACE_VERSION, nullptr ) );
+
+	if( !g_pFileSystem )
+	{
+		Msg( "Couldn't instantiate the filesystem\n" );
+		return false;
+	}
+
+	return true;
+}
+
+bool CEngine::SetupFileSystem()
+{
+	g_pFileSystem->AddSearchPath( ".", "ROOT" );
+
+	//This will let us get files from the original game directory. - Solokiller
+	g_pFileSystem->AddSearchPath( "../valve", "GAME" );
+
+	//Not a typo, the current dir is added twice as both ROOT and BASE in this order. - Solokiller
+	g_pFileSystem->AddSearchPath( ".", "BASE" );
 
 	return true;
 }

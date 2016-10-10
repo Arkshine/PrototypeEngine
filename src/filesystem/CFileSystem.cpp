@@ -1047,17 +1047,28 @@ int64_t CFileSystem::GetFileTimeEx( const char *pFileName )
 
 	std::error_code error;
 
-	//TODO: pack file support. - Solokiller
-
 	for( const auto& searchPath : m_SearchPaths )
 	{
-		path = fs::path( searchPath->szPath ) / pFileName;
-
-		if( fs::exists( path, error ) )
+		if( searchPath->IsPackFile() )
 		{
-			//Don't cast to int64_t here so we get a warning if it's incompatible. - Solokiller
-			//Cast to seconds since the write time is returned in different format. - Solokiller
-			return std::chrono::duration_cast<std::chrono::seconds>( fs::last_write_time( path, error ).time_since_epoch() ).count();
+			auto it = searchPath->packEntries.find( pFileName );
+
+			if( it != searchPath->packEntries.end() )
+			{
+				//Use the pack file's file time. - Solokiller
+				return std::chrono::duration_cast<std::chrono::seconds>( fs::last_write_time( searchPath->szPath, error ).time_since_epoch() ).count();
+			}
+		}
+		else
+		{
+			path = fs::path( searchPath->szPath ) / pFileName;
+
+			if( fs::exists( path, error ) )
+			{
+				//Don't cast to int64_t here so we get a warning if it's incompatible. - Solokiller
+				//Cast to seconds since the write time is returned in different format. - Solokiller
+				return std::chrono::duration_cast<std::chrono::seconds>( fs::last_write_time( path, error ).time_since_epoch() ).count();
+			}
 		}
 	}
 

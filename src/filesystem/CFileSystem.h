@@ -189,6 +189,8 @@ private:
 
 	void AddPackFiles( const char* pszPath );
 
+	CFileHandle* FindFile( CSearchPath& searchPath, const char* pszFileName, const char* pszOptions );
+
 private:
 	SearchPaths_t m_SearchPaths;
 	OpenedFiles_t m_OpenedFiles;

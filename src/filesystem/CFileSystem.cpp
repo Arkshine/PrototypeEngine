@@ -166,30 +166,50 @@ FileHandle_t CFileSystem::Open( const char *pFileName, const char *pOptions, con
 	if( !pFileName || !pOptions )
 		return FILESYSTEM_INVALID_HANDLE;
 
-	const bool bIsWrite = strchr( pOptions, 'w' ) != nullptr;
+	if( !strchr( pOptions, 'r' ) || strchr( pOptions, '+' ) )
+	{
+		//Find the first write path that matches the path ID.
+		//Don't need to worry about pack files here since they're always read only.
 
-	fs::path path;
+		auto it = m_SearchPaths.begin();
 
+		for( auto end = m_SearchPaths.end(); it != end; ++it )
+		{
+			auto& searchPath = *it;
+
+			if( searchPath->flags & SearchPathFlag::READ_ONLY )
+				continue;
+
+			if( pathID && ( !searchPath->pszPathID || strcmp( pathID, searchPath->pszPathID ) != 0 ) )
+				continue;
+
+			auto path = fs::path( searchPath->szPath ) / pFileName;
+
+			path.make_preferred();
+
+			CFileHandle file( *this, path.u8string().c_str(), pOptions );
+
+			if( file.IsOpen() )
+			{
+				m_OpenedFiles.emplace_back( std::make_unique<CFileHandle>( std::move( file ) ) );
+
+				return reinterpret_cast<FileHandle_t>( m_OpenedFiles.back().get() );
+			}
+
+			break;
+		}
+
+		return FILESYSTEM_INVALID_HANDLE;
+	}
+
+	//Reading from a file, consider all paths.
 	for( const auto& searchPath : m_SearchPaths )
 	{
-		if( searchPath->flags & SearchPathFlag::READ_ONLY && bIsWrite )
-			continue;
-
 		if( pathID && ( !searchPath->pszPathID || strcmp( pathID, searchPath->pszPathID ) != 0 ) )
 			continue;
 
-		path = fs::path( searchPath->szPath ) / pFileName;
-
-		path.make_preferred();
-
-		CFileHandle file( *this, path.u8string().c_str(), pOptions );
-
-		if( file.IsOpen() )
-		{
-			m_OpenedFiles.emplace_back( std::make_unique<CFileHandle>( std::move( file ) ) );
-
-			return reinterpret_cast<FileHandle_t>( m_OpenedFiles.back().get() );
-		}
+		if( auto pFileHandle = FindFile( *searchPath, pFileName, pOptions ) )
+			return reinterpret_cast<FileHandle_t>( pFileHandle );
 	}
 
 	return FILESYSTEM_INVALID_HANDLE;
@@ -1202,15 +1222,11 @@ FileHandle_t CFileSystem::OpenFromCacheForRead( const char *pFileName, const cha
 	if( !pFileName || !pOptions )
 		return FILESYSTEM_INVALID_HANDLE;
 
-	const bool bIsWrite = strchr( pOptions, 'w' ) != nullptr;
-
-	if( bIsWrite )
+	if( strchr( pOptions, 'w' ) || strchr( pOptions, '+' ) )
 	{
 		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::OpenFromCacheForRead: Tried to open file \"%s\" with write option!\n", pFileName );
 		return FILESYSTEM_INVALID_HANDLE;
 	}
-
-	fs::path path;
 
 	for( const auto& searchPath : m_SearchPaths )
 	{
@@ -1220,22 +1236,8 @@ FileHandle_t CFileSystem::OpenFromCacheForRead( const char *pFileName, const cha
 		if( pathID && ( !searchPath->pszPathID || strcmp( pathID, searchPath->pszPathID ) != 0 ) )
 			continue;
 
-		path = fs::path( pFileName );
-
-		path.make_preferred();
-
-		auto szFileName = path.u8string();
-
-		auto it = searchPath->packEntries.find( szFileName.c_str() );
-
-		if( it == searchPath->packEntries.end() )
-			continue;
-
-		CFileHandle file( *this, std::move( szFileName ), searchPath->packFile->GetFile(), it->second->GetStartOffset(), it->second->GetLength() );
-
-		m_OpenedFiles.emplace_back( std::make_unique<CFileHandle>( std::move( file ) ) );
-
-		return reinterpret_cast<FileHandle_t>( m_OpenedFiles.back().get() );
+		if( auto pFileHandle = FindFile( *searchPath, pFileName, pOptions ) )
+			return reinterpret_cast<FileHandle_t>( pFileHandle );
 	}
 
 	return FILESYSTEM_INVALID_HANDLE;
@@ -1297,8 +1299,6 @@ bool CFileSystem::AddSearchPath( const char *pPath, const char *pathID, const bo
 	if( FindSearchPath( pPath, true, pathID ) != m_SearchPaths.end() )
 		return false;
 
-	auto path = std::make_unique<CSearchPath>();
-
 	fs::path osPath( pPath );
 
 	//Convert all search paths to the absolute representation, fully resolved.
@@ -1314,6 +1314,8 @@ bool CFileSystem::AddSearchPath( const char *pPath, const char *pathID, const bo
 	}
 
 	osPath.make_preferred();
+
+	auto path = std::make_unique<CSearchPath>();
 
 	strncpy( path->szPath, osPath.u8string().c_str(), sizeof( path->szPath ) );
 	path->szPath[ sizeof( path->szPath ) - 1 ] = '\0';
@@ -1348,4 +1350,44 @@ void CFileSystem::AddPackFiles( const char* pszPath )
 
 		AddPackFile( szPath, "" );
 	}
+}
+
+CFileHandle* CFileSystem::FindFile( CSearchPath& searchPath, const char* pszFileName, const char* pszOptions )
+{
+	std::unique_ptr<CFileHandle> file;
+	
+	if( searchPath.IsPackFile() )
+	{
+		auto path = fs::path( pszFileName );
+
+		path.make_preferred();
+
+		auto szFileName = path.u8string();
+
+		auto it = searchPath.packEntries.find( szFileName.c_str() );
+
+		if( it == searchPath.packEntries.end() )
+			return nullptr;
+
+		auto& entry = *( it->second );
+
+		file = std::make_unique<CFileHandle>( *this, std::move( path.u8string() ), searchPath.packFile->GetFile(), entry.GetStartOffset(), entry.GetLength() );
+	}
+	else
+	{
+		auto path = fs::path( searchPath.szPath ) / pszFileName;
+
+		path.make_preferred();
+
+		file = std::make_unique<CFileHandle>( *this, path.u8string().c_str(), pszOptions );
+	}
+
+	if( file->IsOpen() )
+	{
+		m_OpenedFiles.emplace_back( std::move( file ) );
+
+		return m_OpenedFiles.back().get();
+	}
+
+	return nullptr;
 }

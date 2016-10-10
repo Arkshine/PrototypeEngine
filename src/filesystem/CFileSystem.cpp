@@ -46,7 +46,13 @@ bool CFileSystem::RemoveSearchPath( const char *pPath )
 	if( it == m_SearchPaths.end() )
 		return false;
 
-	m_SearchPaths.erase( it );
+	do
+	{
+		m_SearchPaths.erase( it );
+
+		it = FindSearchPath( pPath );
+	}
+	while( it != m_SearchPaths.end() );
 
 	return true;
 }
@@ -1203,9 +1209,20 @@ void CFileSystem::Warning( FileWarningLevel_t level, const char* pszFormat, ... 
 
 CFileSystem::SearchPaths_t::const_iterator CFileSystem::FindSearchPath( const char* pszPath, const bool bCheckPathID, const char* pszPathID ) const
 {
+	fs::path path( pszPath );
+
+	std::error_code error;
+
+	path = fs::canonical( path, error );
+
+	if( error )
+		return m_SearchPaths.end();
+
+	const auto szPath = path.u8string();
+
 	for( auto it = m_SearchPaths.begin(), end = m_SearchPaths.end(); it != end; ++it )
 	{
-		if( stricmp( pszPath, ( *it )->szPath ) == 0 )
+		if( stricmp( szPath.c_str(), ( *it )->szPath ) == 0 )
 		{
 			if( !bCheckPathID ||
 				( ( pszPathID == nullptr && ( *it )->pszPathID == nullptr ) ||

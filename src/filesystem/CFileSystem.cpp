@@ -19,16 +19,6 @@ static CCharacterSet g_BreakSetIncludingColons( "{}()':" );
 
 EXPOSE_SINGLE_INTERFACE( CFileSystem, IFileSystem, FILESYSTEM_INTERFACE_VERSION );
 
-void CFileSystem::Mount()
-{
-	//Nothing
-}
-
-void CFileSystem::Unmount()
-{
-	//Nothing
-}
-
 void CFileSystem::RemoveAllSearchPaths()
 {
 	m_SearchPaths.clear();
@@ -576,18 +566,6 @@ int CFileSystem::FPrintf( FileHandle_t file, char *pFormat, ... )
 	return result;
 }
 
-void *CFileSystem::GetReadBuffer( FileHandle_t file, int *outBufferSize, bool failIfNotInCache )
-{
-	*outBufferSize = 0;
-
-	return nullptr;
-}
-
-void CFileSystem::ReleaseReadBuffer( FileHandle_t file, void *readBuffer )
-{
-	//Nothing
-}
-
 const char *CFileSystem::FindFirst( const char *pWildCard, FileFindHandle_t *pHandle, const char *pathID )
 {
 	if( !pWildCard || !pHandle )
@@ -765,11 +743,6 @@ void CFileSystem::FindClose( FileFindHandle_t handle )
 		//Flag for removal.
 		data.flags &= ~FindFileFlag::VALID;
 	}
-}
-
-void CFileSystem::GetLocalCopy( const char *pFileName )
-{
-	//Nothing
 }
 
 const char *CFileSystem::GetLocalPath( const char *pFileName, char *pLocalPath, int localPathBufferSize )
@@ -1007,34 +980,6 @@ void CFileSystem::SetWarningLevel( FileWarningLevel_t level )
 {
 	m_WarningLevel = level;
 }
-	 
-void CFileSystem::LogLevelLoadStarted( const char *name )
-{
-	//Nothing
-}
-	 
-void CFileSystem::LogLevelLoadFinished( const char *name )
-{
-	//Nothing
-}
-
-int CFileSystem::HintResourceNeed( const char *hintlist, int forgetEverything )
-{
-	//Nothing
-	return 0;
-}
-
-int CFileSystem::PauseResourcePreloading()
-{
-	//Nothing
-	return 0;
-}
-
-int CFileSystem::ResumeResourcePreloading()
-{
-	//Nothing
-	return 0;
-}
 
 int CFileSystem::SetVBuf( FileHandle_t stream, char *buffer, int mode, long size )
 {
@@ -1062,37 +1007,6 @@ void CFileSystem::GetInterfaceVersion( char *p, int maxlen )
 
 	strncpy( p, "Stdio", maxlen );
 	p[ maxlen - 1 ] = '\0';
-}
-
-bool CFileSystem::IsFileImmediatelyAvailable( const char *pFileName )
-{
-	return true;
-}
-
-WaitForResourcesHandle_t CFileSystem::WaitForResources( const char *resourcelist )
-{
-	return 0;
-}
-
-bool CFileSystem::GetWaitForResourcesProgress( WaitForResourcesHandle_t handle, float *progress /* out */, bool *complete /* out */ )
-{
-	if( progress )
-		*progress = 0;
-
-	if( complete )
-		*complete = true;
-
-	return false;
-}
-
-void CFileSystem::CancelWaitForResources( WaitForResourcesHandle_t handle )
-{
-	//Nothing
-}
-
-bool CFileSystem::IsAppReadyForOfflinePlay( int appID )
-{
-	return true;
 }
 
 template<typename PackType>
@@ -1295,6 +1209,7 @@ bool CFileSystem::PreparePackFile( const char* pszFullPath, const char* pszPathI
 		return false;
 	}
 
+	//TODO: be kind, don't rewind. seek back to the position used at the beginning of this function. - Solokiller
 	rewind( file.GetFile() );
 
 	CSearchPath::Entries_t entries;

@@ -15,6 +15,7 @@ add_sources(
 	CFileHandle.cpp
 	CFileSystem.h
 	CFileSystem.cpp
+	CFileSystem.obsolete.cpp
 	CPackFileEntry.h
 	CSearchPath.h
 	PackFile.h

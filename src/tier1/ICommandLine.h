@@ -57,6 +57,11 @@ public:
 	*	@return If the key was found, returns the value. Otherwise, returns null. If the key is the last argument, returns an empty string.
 	*/
 	virtual const char* GetValue( const char* const pszKey ) const = 0;
+
+	/**
+	*	TODO: temporary to avoid heap corruption on shutdown.
+	*/
+	virtual void ForgetBuffer() = 0;
 };
 
 inline ICommandLine::~ICommandLine()

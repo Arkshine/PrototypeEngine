@@ -23,6 +23,14 @@ public:
 
 	const char* GetValue( const char* const pszKey ) const override;
 
+	void ForgetBuffer() override
+	{
+		m_ppszArgV = nullptr;
+		m_iArgC = 0;
+		delete[] m_pszCommandLine;
+		m_pszCommandLine = nullptr;
+	}
+
 private:
 	void Clear();
 

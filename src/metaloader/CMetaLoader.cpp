@@ -188,6 +188,7 @@ void CMetaLoader::Shutdown()
 	m_FileSystemLib.Free();
 
 	//TODO: need to free the command line since it would otherwise corrupt Tier1's heap. Need to add the shared allocator to make that work. - Solokiller
+	GetCommandLine()->ForgetBuffer();
 }
 
 bool CMetaLoader::LoadFileSystem()

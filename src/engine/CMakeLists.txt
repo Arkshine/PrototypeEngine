@@ -35,8 +35,6 @@ add_sources(
 	#TODO: needs to be somewhere else. - Solokiller
 	GLUtils.h
 	GLUtils.cpp
-	SteamWrapper.h
-	SteamWrapper.cpp
 )
 
 add_subdirectory( ${CMAKE_SOURCE_DIR}/external/HL_SDK/public HL_SDK/public )

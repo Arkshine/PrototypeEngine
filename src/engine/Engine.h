@@ -1,6 +1,8 @@
 #ifndef ENGINE_ENGINE_H
 #define ENGINE_ENGINE_H
 
+#include "steam_api.h"
+
 #include "CEngine.h"
 
 #include "console/CCommandBuffer.h"
@@ -21,5 +23,7 @@ extern CEngine g_Engine;
 extern CVGUI1Surface* g_pVGUI1Surface;
 
 extern IFileSystem2* g_pFileSystem;
+
+extern CSteamAPIContext g_SteamAPIContext;
 
 #endif //ENGINE_ENGINE_H

@@ -19,12 +19,11 @@ add_sources(
 	CMetaLoader.cpp
 	EngineInterface.h
 	EngineInterface.cpp
-	SteamWrapper.h
-	SteamWrapper.cpp
 )
 
 add_subdirectory( ${CMAKE_SOURCE_DIR}/external/HL_SDK/public HL_SDK/public )
 add_subdirectory( ${CMAKE_SOURCE_DIR}/external/SOURCE_SDK/src/public/steam public/steam )
+add_subdirectory( ${CMAKE_SOURCE_DIR}/src/steam steam )
 add_subdirectory( ${CMAKE_SOURCE_DIR}/src/common common )
 
 preprocess_sources()

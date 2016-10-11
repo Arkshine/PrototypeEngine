@@ -40,6 +40,7 @@ add_sources(
 add_subdirectory( ${CMAKE_SOURCE_DIR}/external/HL_SDK/public HL_SDK/public )
 add_subdirectory( ${CMAKE_SOURCE_DIR}/external/SOURCE_SDK/src/public/steam public/steam )
 add_subdirectory( ${CMAKE_SOURCE_DIR}/external/VGUI1/include VGUI1_include )
+add_subdirectory( ${CMAKE_SOURCE_DIR}/src/steam steam )
 add_subdirectory( ${CMAKE_SOURCE_DIR}/src/common common )
 add_subdirectory( console )
 add_subdirectory( VGUI1 )
@@ -53,6 +54,7 @@ add_library( Engine SHARED ${PREP_SRCS} )
 target_compile_definitions( Engine PRIVATE
 	${SHARED_DEFS}
 	STEAM_API_NODLL
+	VERSION_SAFE_STEAM_API_INTERFACES
 )
 
 if( UNIX )

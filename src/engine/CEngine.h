@@ -61,6 +61,10 @@ private:
 
 	IMetaLoader* m_pLoader = nullptr;
 
+	CLibrary m_steam_api;
+
+	bool m_bSteamAPIInitialized = false;
+
 	SDL_Window* m_pEngineWindow = nullptr;
 	SDL_Window* m_pWindow = nullptr;
 

@@ -14,3 +14,5 @@ static CVGUI1App g_VGUI1App;
 CVGUI1Surface* g_pVGUI1Surface = nullptr;
 
 IFileSystem2* g_pFileSystem = nullptr;
+
+CSteamAPIContext g_SteamAPIContext;

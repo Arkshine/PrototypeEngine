@@ -8,18 +8,24 @@
 
 #include "SteamWrapper.h"
 
-#define DEFINE_WRAPPER( funcName, returnType )					\
+#define _DEFINE_WRAPPER( funcName, returnType, callConv )		\
 namespace														\
 {																\
-static returnType ( S_CALLTYPE *g_p##funcName )() = nullptr;	\
+static returnType ( callConv *g_p##funcName )() = nullptr;		\
 }																\
 																\
-S_API returnType S_CALLTYPE funcName()							\
+S_API returnType callConv funcName()							\
 {																\
 	assert( g_p##funcName );									\
 																\
 	return g_p##funcName();										\
 }
+
+#define DEFINE_WRAPPER( funcName, returnType )		\
+_DEFINE_WRAPPER( funcName, returnType, S_CALLTYPE )
+
+#define DEFINE_WRAPPER_NOCALLCONV( funcName, returnType )	\
+_DEFINE_WRAPPER( funcName, returnType, )
 
 #define DEFINE_ACCESSOR_WRAPPER_DIFFNAME( funcName, ifaceName )		\
 namespace															\
@@ -39,11 +45,18 @@ DEFINE_ACCESSOR_WRAPPER_DIFFNAME( funcName, I##funcName )
 
 //steam_api.h
 
+#ifdef VERSION_SAFE_STEAM_API_INTERFACES
+DEFINE_WRAPPER( SteamAPI_InitSafe, bool )
+#else
+DEFINE_WRAPPER( SteamAPI_Init, bool )
+#endif
+
 DEFINE_WRAPPER( SteamAPI_Shutdown, void )
 DEFINE_WRAPPER( SteamAPI_IsSteamRunning, bool )
 DEFINE_WRAPPER( SteamAPI_RunCallbacks, void )
 
 DEFINE_ACCESSOR_WRAPPER( SteamClient )
+#ifndef VERSION_SAFE_STEAM_API_INTERFACES
 DEFINE_ACCESSOR_WRAPPER( SteamUser )
 DEFINE_ACCESSOR_WRAPPER( SteamFriends )
 DEFINE_ACCESSOR_WRAPPER( SteamUtils )
@@ -62,6 +75,10 @@ DEFINE_ACCESSOR_WRAPPER( SteamAppList )
 DEFINE_ACCESSOR_WRAPPER( SteamMusic )
 DEFINE_ACCESSOR_WRAPPER( SteamMusicRemote )
 DEFINE_ACCESSOR_WRAPPER( SteamHTMLSurface )
+#endif
+
+DEFINE_WRAPPER_NOCALLCONV( SteamAPI_GetHSteamPipe, HSteamPipe )
+DEFINE_WRAPPER_NOCALLCONV( SteamAPI_GetHSteamUser, HSteamUser )
 
 namespace
 {
@@ -176,15 +193,52 @@ if( !Steam_InitWrapper( steam_api, #funcName, g_p##funcName ) )		\
 if( !Steam_InitAccessorWrapper( steam_api, #funcName, g_p##funcName ) )	\
 	return false
 
-bool Steam_InitWrappers()
+CLibrary Steam_LoadSteamAPI( const char* const pszPath )
 {
 	CLibrary steam_api;
 
 	//The Steam API library uses standard library naming on all platforms. - Solokiller
-	if( !steam_api.Load( CLibArgs( "steam_api" ) ) )
+	steam_api.Load( CLibArgs( "steam_api" ).Path( pszPath ) );
+
+	return steam_api;
+}
+
+bool Steam_InitWrappers( const char* const pszPath, const bool bInitAPI )
+{
+	CLibrary steam_api = Steam_LoadSteamAPI( pszPath );
+
+	return Steam_InitWrappers( steam_api, bInitAPI );
+}
+
+bool Steam_InitWrappers( CLibrary& steam_api, const bool bInitAPI )
+{
+	if( !steam_api.IsLoaded() )
 	{
 		Msg( "Steam_InitWrappers: Couldn't load steam_api library\n" );
 		return false;
+	}
+
+#ifdef VERSION_SAFE_STEAM_API_INTERFACES
+	INIT_WRAPPER( SteamAPI_InitSafe );
+#else
+	INIT_WRAPPER( SteamAPI_Init );
+#endif
+
+	if( bInitAPI )
+	{
+		const bool bInitResult = 
+#ifdef VERSION_SAFE_STEAM_API_INTERFACES
+		SteamAPI_InitSafe
+#else
+		SteamAPI_Init
+#endif
+			();
+
+		if( !bInitResult )
+		{
+			UTIL_ShowMessageBox( "Failed to initialize authentication interface. Exiting...\n", "Fatal Error", LogType::ERROR );
+			return false;
+		}
 	}
 
 	INIT_WRAPPER( SteamAPI_Shutdown );
@@ -197,6 +251,7 @@ bool Steam_InitWrappers()
 	INIT_WRAPPER( SteamAPI_UnregisterCallResult );
 
 	INIT_ACCESSOR_WRAPPER( SteamClient );
+#ifndef VERSION_SAFE_STEAM_API_INTERFACES
 	INIT_ACCESSOR_WRAPPER( SteamUser );
 	INIT_ACCESSOR_WRAPPER( SteamFriends );
 	INIT_ACCESSOR_WRAPPER( SteamUtils );
@@ -219,6 +274,10 @@ bool Steam_InitWrappers()
 	INIT_ACCESSOR_WRAPPER( SteamMusicRemote );
 	INIT_ACCESSOR_WRAPPER( SteamHTMLSurface );
 	*/
+#endif
+
+	INIT_WRAPPER( SteamAPI_GetHSteamPipe );
+	INIT_WRAPPER( SteamAPI_GetHSteamUser );
 
 #ifndef VERSION_SAFE_STEAM_API_INTERFACES
 	INIT_WRAPPER( SteamGameServer_Init );

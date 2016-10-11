@@ -8,7 +8,7 @@
 #include "Logging.h"
 #include "IMetaTool.h"
 
-#include "SteamWrapper.h"
+#include "steam/SteamWrapper.h"
 
 #include "CMetaLoader.h"
 

@@ -20,7 +20,7 @@
 #include "IMetaLoader.h"
 #include "interface.h"
 #include "Logging.h"
-#include "SteamWrapper.h"
+#include "steam/SteamWrapper.h"
 
 #include "FileSystem2.h"
 #include "CFileSystemWrapper.h"
@@ -47,6 +47,21 @@ bool CEngine::Startup( IMetaLoader& loader, CreateInterfaceFn* pFactories, const
 	if( !( *m_szMyGameDir ) )
 	{
 		UTIL_ShowMessageBox( "No game directory set", "Error", LogType::ERROR );
+		return false;
+	}
+
+	m_steam_api = Steam_LoadSteamAPI( filepaths::BIN_DIR );
+
+	m_bSteamAPIInitialized = Steam_InitWrappers( m_steam_api, true );
+
+	if( !m_bSteamAPIInitialized )
+	{
+		return false;
+	}
+
+	if( !g_SteamAPIContext.Init() )
+	{
+		UTIL_ShowMessageBox( "Failed to initialize Steam API Context. Exiting...\n", "Fatal Error", LogType::ERROR );
 		return false;
 	}
 
@@ -186,6 +201,14 @@ void CEngine::Shutdown()
 		}
 
 		//SDL_Quit is handled by the loader.
+	}
+
+	if( m_steam_api.IsLoaded() )
+	{
+		if( m_bSteamAPIInitialized )
+			SteamAPI_Shutdown();
+
+		m_steam_api.Free();
 	}
 }
 

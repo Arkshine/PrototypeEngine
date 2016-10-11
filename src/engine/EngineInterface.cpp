@@ -12,6 +12,7 @@ typedef struct globalvars_s globalvars_t;
 #include "eiface.h"
 
 #include "Engine.h"
+#include "FilePaths.h"
 
 #include "EngineInterface.h"
 
@@ -118,7 +119,7 @@ FARPROC WINAPI DelayHook(
 			if( !( *g_Engine.GetMyGameDir() ) )
 				return nullptr;
 
-			const int iResult = snprintf( szPath, sizeof( szPath ), "%s/%s", g_Engine.GetMyGameDir(), pdli->szDll );
+			const int iResult = snprintf( szPath, sizeof( szPath ), "%s/%s/%s", g_Engine.GetMyGameDir(), filepaths::BIN_DIR, pdli->szDll );
 
 			if( iResult < 0 || static_cast<size_t>( iResult ) >= sizeof( szPath ) )
 				return nullptr;

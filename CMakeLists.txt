@@ -171,6 +171,8 @@ endif()
 #Base dir for game outputs
 set( GAME_BASE_PATH "${STEAMCOMMON}/Half-Life/goldsource2" )
 
+set( GAME_BIN_PATH "${GAME_BASE_PATH}/bin" )
+
 MESSAGE( STATUS "Base Game Path: ${GAME_BASE_PATH}" )
 
 #Shared preprocessor definitions

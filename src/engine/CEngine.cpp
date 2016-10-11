@@ -14,6 +14,7 @@
 #include "CNetworkBuffer.h"
 #include "Common.h"
 #include "Engine.h"
+#include "FilePaths.h"
 #include "GLUtils.h"
 #include "interface.h"
 #include "Logging.h"
@@ -196,7 +197,7 @@ bool CEngine::RunEngine( const bool bIsListenServer )
 
 bool CEngine::LoadFileSystem()
 {
-	if( !m_FileSystemLib.Load( CLibArgs( "FileSystem" ).DisablePrefixes( true ) ) )
+	if( !m_FileSystemLib.Load( CLibArgs( "FileSystem" ).DisablePrefixes( true ).Path( filepaths::BIN_DIR ) ) )
 	{
 		Msg( "Couldn't load FileSystem: %s\n", CLibrary::GetLoadErrorDescription() );
 		return false;

@@ -8,6 +8,8 @@ add_sources(
 	CNetworkBuffer.h
 	CNetworkBuffer.cpp
 	Common.h
+	FilePaths.h
+	FilePaths.cpp
 	FileSystem2.h
 	Logging.h
 	Logging.cpp

@@ -4,6 +4,7 @@ add_sources(
 	CCharacterSet.h
 	CCommand.h
 	CCommand.cpp
+	CFile.h
 	CNetworkBuffer.h
 	CNetworkBuffer.cpp
 	Common.h

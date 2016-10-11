@@ -12,6 +12,13 @@
 #include "vgui_loadtga.h"
 #include "VGUI_InputStream.h"
 
+#include "Common.h"
+#include "FileSystem2.h"
+
+#include "Engine.h"
+
+#include "CFile.h"
+
 #include "VGUI1/VGUI_RDBitmapTGA.h"
 
 
@@ -67,26 +74,16 @@ public:
 
 vgui::BitmapTGA* vgui_LoadTGA( char const *pFilename, const bool bInvertAlpha, const bool bResolutionDependent )
 {
-	//TODO: needs to handle SteamPipe. - Solokiller
+	CFile file( pFilename, "rb" );
 
-	FILE* pFile = fopen( pFilename, "rb" );
-
-	if( !pFile )
+	if( !file )
 		return nullptr;
 
-	fseek( pFile, 0, SEEK_END );
-
-	const auto size = ftell( pFile );
+	const auto size = file.Size();
 
 	auto data = std::make_unique<uchar[]>( size );
 
-	fseek( pFile, 0, SEEK_SET );
-
-	const bool bSuccess = fread( data.get(), size, 1, pFile ) == 1;
-
-	fclose( pFile );
-
-	if( !bSuccess )
+	if( file.Read( data.get(), size ) != size )
 		return nullptr;
 
 	MemoryInputStream stream;

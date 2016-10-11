@@ -73,6 +73,7 @@ bool CEngine::Startup( IMetaLoader& loader, CreateInterfaceFn* pFactories, const
 
 		if( !fileSystem.Load( CLibArgs( "filesystem_stdio" ).DisablePrefixes( true ) ) )
 		{
+			Msg( "Couldn't load filesystem_stdio\n" );
 			return false;
 		}
 
@@ -80,7 +81,7 @@ bool CEngine::Startup( IMetaLoader& loader, CreateInterfaceFn* pFactories, const
 
 		if( !filesystemFactory )
 		{
-			Msg( "Couldn't find filesystem factory\n" );
+			Msg( "Couldn't find filesystem_stdio factory\n" );
 			return false;
 		}
 
@@ -88,7 +89,7 @@ bool CEngine::Startup( IMetaLoader& loader, CreateInterfaceFn* pFactories, const
 
 		if( !pFileSystem )
 		{
-			Msg( "Couldn't instantiate the filesystem\n" );
+			Msg( "Couldn't instantiate the filesystem from filesystem_stdio\n" );
 			return false;
 		}
 

@@ -1,45 +1,46 @@
 #ifndef COMMON_CCOMMANDLINE_H
 #define COMMON_CCOMMANDLINE_H
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "ICommandLine.h"
 
 class CCommandLine final : public ICommandLine
 {
+private:
+	typedef std::vector<std::string> Arguments_t;
+
+	static const char META_PREFIX[];
+
+	static const size_t META_PREFIX_LENGTH = 6;
+
 public:
 	CCommandLine() = default;
 	~CCommandLine();
 
-	bool Initialize( const int iArgC, char** ppszArgV, const bool bTakeOwnership ) override;
+	bool Initialize( const size_t uiArgC, char** ppszArgV, const char* const* ppszStripCommands = nullptr ) override;
 
 	const char* GetCommandLineString() const override;
 
-	int GetArgumentCount() const override;
+	size_t GetArgumentCount() const override;
 
-	const char* GetArgument( const int iArgument ) const override;
+	const char* GetArgument( const size_t uiArgument ) const override;
 
-	const char* operator[]( const int iArgument ) const override;
+	const char* operator[]( const size_t uiArgument ) const override;
 
-	int IndexOf( const char* const pszKey ) const override;
+	size_t IndexOf( const char* const pszKey ) const override;
 
 	const char* GetValue( const char* const pszKey ) const override;
-
-	void ForgetBuffer() override
-	{
-		m_ppszArgV = nullptr;
-		m_iArgC = 0;
-		delete[] m_pszCommandLine;
-		m_pszCommandLine = nullptr;
-	}
 
 private:
 	void Clear();
 
 private:
-	char* m_pszCommandLine = nullptr;
+	std::string m_szCommandLine;
 
-	int m_iArgC = 0;
-
-	char** m_ppszArgV = nullptr;
+	Arguments_t m_Arguments;
 };
 
 

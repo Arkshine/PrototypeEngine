@@ -6,40 +6,108 @@
 
 #include "CCommandLine.h"
 
+const char CCommandLine::META_PREFIX[] = "-meta:";
+
 CCommandLine::~CCommandLine()
 {
 	Clear();
 }
 
-bool CCommandLine::Initialize( const int iArgC, char** ppszArgV, const bool bTakeOwnership )
+bool CCommandLine::Initialize( const size_t uiArgC, char** ppszArgV, const char* const* ppszStripCommands )
 {
 	Clear();
 
-	m_iArgC = iArgC;
+	m_Arguments.resize( uiArgC );
 
-	if( bTakeOwnership )
+	for( size_t uiArg = 0; uiArg < uiArgC; ++uiArg )
 	{
-		m_ppszArgV = ppszArgV;
+		m_Arguments[ uiArg ] = ppszArgV[ uiArg ];
 	}
-	else
+
+	/*	Change all -meta:<command> lines into -<command>
+	*	This is a 3 step process: 
+	*	find all -meta: commands, 
+	*	remove the variants with the same name that don't have the meta prefix, 
+	*	then rename the rest. - Solokiller
+	*/
 	{
-		m_ppszArgV = new char*[ iArgC ];
+		std::vector<std::string> commandsToRemove;
 
-		for( int iArg = 0; iArg < iArgC; ++iArg )
+		//Build the list.
+		for( const auto& arg : m_Arguments )
 		{
-			const size_t uiLength = strlen( ppszArgV[ iArg ] );
+			if( strncmp( arg.c_str(), META_PREFIX, META_PREFIX_LENGTH ) == 0 )
+			{
+				commandsToRemove.emplace_back( arg.substr( META_PREFIX_LENGTH ) );
+			}
+		}
 
-			m_ppszArgV[ iArg ] = new char[ uiLength + 1 ];
+		//Add additional commands to remove.
+		if( ppszStripCommands )
+		{
+			for( auto ppszStrip = ppszStripCommands; *ppszStrip; ++ppszStrip )
+			{
+				commandsToRemove.emplace_back( *ppszStrip );
+			}
+		}
 
-			strcpy( m_ppszArgV[ iArg ], ppszArgV[ iArg ] );
+		//Remove the duplicates.
+		for( const auto& command : commandsToRemove )
+		{
+			for( auto it = m_Arguments.begin(); it != m_Arguments.end(); )
+			{
+				if( *it == command )
+				{
+					it = m_Arguments.erase( it );
+
+					//Check if there was a value for the command. Values have neither - or + as their first character.
+					if( it != m_Arguments.end() )
+					{
+						const char prefix = it->at( 0 );
+
+						//It's a value, remove it.
+						if( prefix != '-' && prefix != '+' )
+						{
+							it = m_Arguments.erase( it );
+						}
+					}
+				}
+				else
+					++it;
+			}
+		}
+
+		//Rename the rest.
+		for( auto it = m_Arguments.begin(); it != m_Arguments.end(); )
+		{
+			if( strncmp( it->c_str(), META_PREFIX, META_PREFIX_LENGTH ) == 0 )
+			{
+				if( it->length() > META_PREFIX_LENGTH )
+				{
+					( *it ) = it->substr( META_PREFIX_LENGTH );
+
+					++it;
+				}
+				else
+				{
+					//The command was named -meta:, so just remove it.
+					it = m_Arguments.erase( it );
+				}
+			}
+			else
+			{
+				++it;
+			}
 		}
 	}
 
+	m_Arguments.shrink_to_fit();
+
 	std::stringstream stream;
 
-	for( int iArg = 0; iArg < iArgC; ++iArg )
+	for( size_t uiArg = 0; uiArg < m_Arguments.size(); ++uiArg )
 	{
-		const char* pszArg = ppszArgV[ iArg ];
+		const char* pszArg = m_Arguments[ uiArg ].c_str();
 
 		//TODO: refactor into function. - Solokiller
 		const bool bHasWhitespace = []( const char* pszString ) -> bool
@@ -70,52 +138,51 @@ bool CCommandLine::Initialize( const int iArgC, char** ppszArgV, const bool bTak
 		stream << ' ';
 	}
 
-	std::string szCommandline = stream.str();
+	m_szCommandLine = stream.str();
 
 	//The last character will be a space unless there were no commandline arguments, so don't copy that. - Solokiller
-	const size_t uiLength = !szCommandline.empty() ? szCommandline.length() : 1;
+	if( !m_szCommandLine.empty() )
+	{
+		m_szCommandLine.resize( m_szCommandLine.size() - 1 );
+	}
 
-	m_pszCommandLine = new char[ uiLength ];
-
-	strncpy( m_pszCommandLine, szCommandline.c_str(), uiLength );
-
-	m_pszCommandLine[ uiLength - 1 ] = '\0';
+	m_szCommandLine.shrink_to_fit();
 
 	return true;
 }
 
 const char* CCommandLine::GetCommandLineString() const
 {
-	return m_pszCommandLine;
+	return m_szCommandLine.c_str();
 }
 
-int CCommandLine::GetArgumentCount() const
+size_t CCommandLine::GetArgumentCount() const
 {
-	return m_iArgC;
+	return m_Arguments.size();
 }
 
-const char* CCommandLine::GetArgument( const int iArgument ) const
+const char* CCommandLine::GetArgument( const size_t uiArgument ) const
 {
-	assert( iArgument >= 0 && iArgument < m_iArgC );
+	assert( uiArgument < m_Arguments.size() );
 
-	if( iArgument < 0 || iArgument >= m_iArgC )
+	if( uiArgument >= m_Arguments.size() )
 		return nullptr;
 
-	return m_ppszArgV[ iArgument ];
+	return m_Arguments[ uiArgument ].c_str();
 }
 
-const char* CCommandLine::operator[]( const int iArgument ) const
+const char* CCommandLine::operator[]( const size_t uiArgument ) const
 {
-	return GetArgument( iArgument );
+	return GetArgument( uiArgument );
 }
 
-int CCommandLine::IndexOf( const char* const pszKey ) const
+size_t CCommandLine::IndexOf( const char* const pszKey ) const
 {
-	for( int iArg = 0; iArg < m_iArgC; ++iArg )
+	for( size_t uiArg = 0; uiArg < m_Arguments.size(); ++uiArg )
 	{
-		if( stricmp( pszKey, m_ppszArgV[ iArg ] ) == 0 )
+		if( stricmp( pszKey, m_Arguments[ uiArg ].c_str() ) == 0 )
 		{
-			return iArg;
+			return uiArg;
 		}
 	}
 
@@ -124,34 +191,19 @@ int CCommandLine::IndexOf( const char* const pszKey ) const
 
 const char* CCommandLine::GetValue( const char* const pszKey ) const
 {
-	const int iIndex = IndexOf( pszKey );
+	const size_t uiIndex = IndexOf( pszKey );
 
-	if( iIndex == INVALID_INDEX )
+	if( uiIndex == INVALID_INDEX )
 		return nullptr;
 
-	if( iIndex + 1 < m_iArgC )
-		return m_ppszArgV[ iIndex + 1 ];
+	if( uiIndex + 1 < m_Arguments.size() )
+		return m_Arguments[ uiIndex + 1 ].c_str();
 
 	return "";
 }
 
 void CCommandLine::Clear()
 {
-	if( m_ppszArgV )
-	{
-		for( int iArg = 0; iArg < m_iArgC; ++iArg )
-		{
-			delete[] m_ppszArgV[ iArg ];
-		}
-
-		delete[] m_ppszArgV;
-		m_ppszArgV = nullptr;
-		m_iArgC = 0;
-	}
-
-	if( m_pszCommandLine )
-	{
-		delete[] m_pszCommandLine;
-		m_pszCommandLine = nullptr;
-	}
+	m_szCommandLine.clear();
+	m_Arguments.clear();
 }

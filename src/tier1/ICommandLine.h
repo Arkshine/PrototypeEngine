@@ -1,6 +1,8 @@
 #ifndef COMMON_ICOMMANDLINE_H
 #define COMMON_ICOMMANDLINE_H
 
+#include <cstddef>
+
 /**
 *	Represents the command line.
 *	Never store a pointer returned by this.
@@ -8,19 +10,20 @@
 class ICommandLine
 {
 public:
-	static const int INVALID_INDEX = -1;
+	static const size_t INVALID_INDEX = -1;
 
 public:
 	virtual ~ICommandLine() = 0;
 
 	/**
 	*	Initializes the command line to the given arguments.
-	*	@param iArgC Argument count.
+	*	"-meta:" commands are renamed and commands with the original name are removed.
+	*	@param uiArgC Argument count.
 	*	@param ppszArgV Argument vector.
-	*	@param bTakeOwnership Whether to take ownership of the argument vector.
+	*	@param ppszStripCommands Null terminated list of commands to remove from the command line.
 	*	@return Whether initialization succeeded.
 	*/
-	virtual bool Initialize( const int iArgC, char** ppszArgV, const bool bTakeOwnership ) = 0;
+	virtual bool Initialize( const size_t uiArgC, char** ppszArgV, const char* const* ppszStripCommands = nullptr ) = 0;
 
 	/**
 	*	@return The complete command line.
@@ -30,26 +33,26 @@ public:
 	/**
 	*	@return The number of arguments. Identical to argc.
 	*/
-	virtual int GetArgumentCount() const = 0;
+	virtual size_t GetArgumentCount() const = 0;
 
 	/**
 	*	Gets an argument by index.
-	*	@param iArgument Index of the argument.
+	*	@param uiArgument Index of the argument.
 	*	@return If the index is valid, returns the argument. Otherwise, returns null.
 	*/
-	virtual const char* GetArgument( const int iArgument ) const = 0;
+	virtual const char* GetArgument( const size_t uiArgument ) const = 0;
 
 	/**
-	*	@copydoc GetArgument( const int iArgument ) const
+	*	@copydoc GetArgument( const int uiArgument ) const
 	*/
-	virtual const char* operator[]( const int iArgument ) const = 0;
+	virtual const char* operator[]( const size_t uiArgument ) const = 0;
 
 	/**
 	*	Gets the index of a key.
 	*	@param pszKey Key to search for.
 	*	@return If the key was found, returns the index. Otherwise, returns INVALID_INDEX.
 	*/
-	virtual int IndexOf( const char* const pszKey ) const = 0;
+	virtual size_t IndexOf( const char* const pszKey ) const = 0;
 
 	/**
 	*	Gets the value for a key.
@@ -57,11 +60,6 @@ public:
 	*	@return If the key was found, returns the value. Otherwise, returns null. If the key is the last argument, returns an empty string.
 	*/
 	virtual const char* GetValue( const char* const pszKey ) const = 0;
-
-	/**
-	*	TODO: temporary to avoid heap corruption on shutdown.
-	*/
-	virtual void ForgetBuffer() = 0;
 };
 
 inline ICommandLine::~ICommandLine()

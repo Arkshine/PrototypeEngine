@@ -12,6 +12,15 @@ CMetaLoader g_MetaLoader;
 
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR( CMetaLoader, IMetaLoader, IMETALOADER_NAME, g_MetaLoader );
 
+namespace
+{
+static const char* const STRIP_COMMANDS[] = 
+{
+	"-game",	//Always strip -game so it can be reused.
+	nullptr
+};
+}
+
 const char* CMetaLoader::GetGameDirectory( char* pszDest, size_t uiSizeInCharacters ) const
 {
 	if( !pszDest || uiSizeInCharacters <= 0 )
@@ -89,7 +98,7 @@ bool CMetaLoader::RunLoader()
 		if( !InitCommandLine( iArgC, &ppszArgV ) )
 			return false;
 
-		if( !GetCommandLine()->Initialize( iArgC, ppszArgV, true ) )
+		if( !GetCommandLine()->Initialize( iArgC, ppszArgV, STRIP_COMMANDS ) )
 			return false;
 	}
 
@@ -98,6 +107,11 @@ bool CMetaLoader::RunLoader()
 	AllocConsole();
 	freopen( "CONOUT$", "w", stdout );
 #endif
+
+	if( GetCommandLine()->GetValue( "-dumpcmdline" ) )
+	{
+		Msg( "%s\n", GetCommandLine()->GetCommandLineString() );
+	}
 
 	if( !LoadFileSystem() )
 		return false;
@@ -186,9 +200,6 @@ void CMetaLoader::Shutdown()
 	m_ToolLib.Free();
 
 	m_FileSystemLib.Free();
-
-	//TODO: need to free the command line since it would otherwise corrupt Tier1's heap. Need to add the shared allocator to make that work. - Solokiller
-	GetCommandLine()->ForgetBuffer();
 }
 
 bool CMetaLoader::LoadFileSystem()

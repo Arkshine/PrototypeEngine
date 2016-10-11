@@ -1,4 +1,5 @@
 #include <cmath>
+#include <cstring>
 #include <limits>
 
 #include <gl/glew.h>
@@ -22,6 +23,7 @@
 #include "SteamWrapper.h"
 
 #include "FileSystem2.h"
+#include "CFileSystemWrapper.h"
 
 #include "VGUI1/vgui_loadtga.h"
 
@@ -62,6 +64,38 @@ bool CEngine::Startup( IMetaLoader& loader, CreateInterfaceFn* pFactories, const
 	{
 		Msg( "Couldn't instantiate the filesystem\n" );
 		return false;
+	}
+
+	//Load the original filesystem and overwrite its filesystem's vtable with one that points to ours.
+	//Note: if the original engine regains control, it might try to use preexisting handles. Don't let that happen. - Solokiller
+	{
+		CLibrary fileSystem;
+
+		if( !fileSystem.Load( CLibArgs( "filesystem_stdio" ).DisablePrefixes( true ) ) )
+		{
+			return false;
+		}
+
+		auto filesystemFactory = reinterpret_cast<CreateInterfaceFn>( fileSystem.GetFunctionAddress( CREATEINTERFACE_PROCNAME ) );
+
+		if( !filesystemFactory )
+		{
+			Msg( "Couldn't find filesystem factory\n" );
+			return false;
+		}
+
+		auto pFileSystem = static_cast<IFileSystem*>( filesystemFactory( FILESYSTEM_INTERFACE_VERSION, nullptr ) );
+
+		if( !pFileSystem )
+		{
+			Msg( "Couldn't instantiate the filesystem\n" );
+			return false;
+		}
+
+		CFileSystemWrapper wrapper;
+
+		//Don't try this at home.
+		memcpy( pFileSystem, &wrapper, sizeof( IFileSystem ) );
 	}
 
 	return true;

@@ -26,6 +26,8 @@ include_directories(
 add_sources(
 	CEngine.h
 	CEngine.cpp
+	CFileSystemWrapper.h
+	CFileSystemWrapper.cpp
 	Engine.h
 	Engine.cpp
 	EngineInterface.h

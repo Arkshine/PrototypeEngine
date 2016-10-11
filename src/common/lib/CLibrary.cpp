@@ -35,6 +35,15 @@ CLibrary& CLibrary::operator=( CLibrary&& other )
 	return *this;
 }
 
+CLibrary::CLibrary( std::string&& szName, LibraryHandle_t hLibrary )
+{
+	if( hLibrary != NULL_HANDLE() )
+	{
+		m_szName = std::move( szName );
+		m_hLibrary = hLibrary;
+	}
+}
+
 CLibrary::~CLibrary()
 {
 	Free();

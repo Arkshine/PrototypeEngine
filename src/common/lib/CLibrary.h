@@ -41,6 +41,11 @@ public:
 	CLibrary& operator=( CLibrary&& other );
 
 	/**
+	*	Constructs a handle to a library using a platform specific handle.
+	*/
+	CLibrary( std::string&& szName, LibraryHandle_t hLibrary );
+
+	/**
 	*	Frees the library if it wasn't already freed before.
 	*/
 	~CLibrary();

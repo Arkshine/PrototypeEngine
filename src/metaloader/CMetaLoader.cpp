@@ -200,6 +200,11 @@ void CMetaLoader::Shutdown()
 	m_ToolLib.Free();
 
 	m_FileSystemLib.Free();
+
+	if( m_bIsListenServer )
+	{
+		SDL_Quit();
+	}
 }
 
 bool CMetaLoader::LoadFileSystem()

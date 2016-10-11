@@ -1,20 +1,20 @@
 #ifndef ENGINE_CENGINE_H
 #define ENGINE_CENGINE_H
 
-#include <experimental/filesystem>
-
 #include <SDL2/SDL.h>
 
 #include "Platform.h"
 
 #include "lib/CLibrary.h"
 
+#include "IMetaTool.h"
+
 namespace vgui
 {
 class Panel;
 }
 
-class CEngine final
+class CEngine final : public IMetaTool
 {
 public:
 	CEngine() = default;
@@ -37,17 +37,13 @@ public:
 
 	void SetMyGameDir( const char* const pszGameDir );
 
-	void Run( const bool bIsListenServer );
+	bool Startup( IMetaLoader& loader, CreateInterfaceFn* pFactories, const size_t uiNumFactories ) override;
+
+	bool Run() override;
+
+	void Shutdown() override;
 
 private:
-	bool RunEngine( const bool bIsListenServer );
-
-	bool LoadFileSystem();
-
-	bool SetupFileSystem();
-
-	static SDL_Window* FindEngineWindow();
-
 	bool CreateGameWindow();
 
 	bool HostInit();
@@ -57,13 +53,13 @@ private:
 private:
 	char m_szMyGameDir[ MAX_PATH ] = {};
 
-	std::experimental::filesystem::path m_OldCWD;
-
 	unsigned int m_iWidth = 640;
 	unsigned int m_iHeight = 480;
 
 	float m_flXScale = 1;
 	float m_flYScale = 1;
+
+	IMetaLoader* m_pLoader = nullptr;
 
 	SDL_Window* m_pEngineWindow = nullptr;
 	SDL_Window* m_pWindow = nullptr;
@@ -71,8 +67,6 @@ private:
 	SDL_GLContext m_hGLContext = nullptr;
 
 	vgui::Panel* m_pRootPanel = nullptr;
-
-	CLibrary m_FileSystemLib;
 
 private:
 	CEngine( const CEngine& ) = delete;

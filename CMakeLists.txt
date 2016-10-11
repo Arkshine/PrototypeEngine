@@ -173,6 +173,8 @@ set( GAME_BASE_PATH "${STEAMCOMMON}/Half-Life/goldsource2" )
 
 set( GAME_BIN_PATH "${GAME_BASE_PATH}/bin" )
 
+set( GAME_TOOL_PATH "${GAME_BASE_PATH}/tools" )
+
 MESSAGE( STATUS "Base Game Path: ${GAME_BASE_PATH}" )
 
 #Shared preprocessor definitions

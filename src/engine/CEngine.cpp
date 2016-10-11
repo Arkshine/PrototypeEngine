@@ -16,6 +16,7 @@
 #include "Engine.h"
 #include "FilePaths.h"
 #include "GLUtils.h"
+#include "IMetaLoader.h"
 #include "interface.h"
 #include "Logging.h"
 #include "SteamWrapper.h"
@@ -26,95 +27,50 @@
 
 #include "CEngine.h"
 
+EXPOSE_SINGLE_INTERFACE_GLOBALVAR( CEngine, IMetaTool, DEFAULT_IMETATOOL_NAME, g_Engine );
+
 void CEngine::SetMyGameDir( const char* const pszGameDir )
 {
 	strncpy( m_szMyGameDir, pszGameDir, sizeof( m_szMyGameDir ) );
 	m_szMyGameDir[ sizeof( m_szMyGameDir ) - 1 ] = '\0';
 }
 
-void CEngine::Run( const bool bIsListenServer )
+bool CEngine::Startup( IMetaLoader& loader, CreateInterfaceFn* pFactories, const size_t uiNumFactories )
 {
-	const bool bResult = RunEngine( bIsListenServer );
+	m_pLoader = &loader;
 
-	exit( bResult ? EXIT_SUCCESS : EXIT_FAILURE );
-}
+	if( !m_pLoader->GetGameDirectory( m_szMyGameDir, sizeof( m_szMyGameDir ) ) )
+		return false;
 
-bool CEngine::RunEngine( const bool bIsListenServer )
-{
 	if( !( *m_szMyGameDir ) )
 	{
 		UTIL_ShowMessageBox( "No game directory set", "Error", LogType::ERROR );
 		return false;
 	}
 
-	//Must be done before setting the working directory to prevent library load failure. - Solokiller
-	if( !Steam_InitWrappers() )
-		return false;
-
-	//Set the working directory to the game directory that the engine is running in.
-	//Needed so asset loading works. Note that any mods that rely on ./valve to exist will break. - Solokiller
-	//TODO: Consider adding symlinks or requiring the copying of assets to game directories. Windows won't allow it when targeting XP.
+	for( size_t uiIndex = 0; uiIndex < uiNumFactories; ++uiIndex )
 	{
+		auto factory = pFactories[ uiIndex ];
 
-		m_OldCWD = std::experimental::filesystem::current_path();
-
-		const std::string szPath = std::string( "./" ) + m_szMyGameDir;
-
-		std::error_code error;
-
-		std::experimental::filesystem::current_path( std::experimental::filesystem::path( szPath ), error );
-
-		if( error )
+		if( !g_pFileSystem )
 		{
-			UTIL_ShowMessageBox( ( std::string( "Error while setting current working directory \"" ) + szPath + "\": " + error.message() ).c_str(), "Error", LogType::ERROR );
-			return false;
+			g_pFileSystem = static_cast<IFileSystem2*>( factory( FILESYSTEM2_INTERFACE_VERSION, nullptr ) );
 		}
 	}
 
+	if( !g_pFileSystem )
 	{
-		int iArgC;
-		char** ppszArgV;
-
-		if( !InitCommandLine( iArgC, &ppszArgV ) )
-			return false;
-
-		if( !GetCommandLine()->Initialize( iArgC, ppszArgV, true ) )
-			return false;
-	}
-
-	//TODO: until we can draw the console onscreen, use a console window. - Solokiller
-#ifdef WIN32
-	AllocConsole();
-	freopen( "CONOUT$", "w", stdout );
-#endif
-
-	if( !LoadFileSystem() )
-		return false;
-
-	if( !SetupFileSystem() )
-	{
-		Msg( "Failed to set up filesystem\n" );
+		Msg( "Couldn't instantiate the filesystem\n" );
 		return false;
 	}
 
-	if( bIsListenServer )
+	return true;
+}
+
+bool CEngine::Run()
+{
+	if( m_pLoader->IsListenServer() )
 	{
-		//Already done by GoldSource. - Solokiller
-		/*
-		if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
-		{
-			return false;
-		}
-		*/
-
-		//Find the engine's window and make it invisible.
-		m_pEngineWindow = FindEngineWindow();
-
-		if( m_pEngineWindow )
-		{
-			SDL_HideWindow( m_pEngineWindow );
-		}
-
 		if( !CreateGameWindow() )
 			return false;
 	}
@@ -181,7 +137,12 @@ bool CEngine::RunEngine( const bool bIsListenServer )
 		UTIL_ShowMessageBox( "Error initializing host", "Fatal Error", LogType::ERROR );
 	}
 
-	if( bIsListenServer )
+	return true;
+}
+
+void CEngine::Shutdown()
+{
+	if( m_pLoader->IsListenServer() )
 	{
 		if( m_pWindow )
 		{
@@ -189,63 +150,8 @@ bool CEngine::RunEngine( const bool bIsListenServer )
 			m_pWindow = nullptr;
 		}
 
-		SDL_Quit();
+		//SDL_Quit is handled by the loader.
 	}
-
-	return true;
-}
-
-bool CEngine::LoadFileSystem()
-{
-	if( !m_FileSystemLib.Load( CLibArgs( "FileSystem" ).DisablePrefixes( true ).Path( filepaths::BIN_DIR ) ) )
-	{
-		Msg( "Couldn't load FileSystem: %s\n", CLibrary::GetLoadErrorDescription() );
-		return false;
-	}
-
-	auto filesystemFactory = reinterpret_cast<CreateInterfaceFn>( m_FileSystemLib.GetFunctionAddress( CREATEINTERFACE_PROCNAME ) );
-
-	if( !filesystemFactory )
-	{
-		Msg( "Couldn't find filesystem factory\n" );
-		return false;
-	}
-
-	g_pFileSystem = static_cast<IFileSystem2*>( filesystemFactory( FILESYSTEM2_INTERFACE_VERSION, nullptr ) );
-
-	if( !g_pFileSystem )
-	{
-		Msg( "Couldn't instantiate the filesystem\n" );
-		return false;
-	}
-
-	return true;
-}
-
-bool CEngine::SetupFileSystem()
-{
-	g_pFileSystem->AddSearchPath( ".", "ROOT" );
-
-	//This will let us get files from the original game directory. - Solokiller
-	g_pFileSystem->AddSearchPath( "../valve", "GAME" );
-
-	//Not a typo, the current dir is added twice as both ROOT and BASE in this order. - Solokiller
-	g_pFileSystem->AddSearchPath( ".", "BASE" );
-
-	return true;
-}
-
-SDL_Window* CEngine::FindEngineWindow()
-{
-	for( Uint32 uiID = 0; uiID < std::numeric_limits<Uint32>::max(); ++uiID )
-	{
-		SDL_Window* pWindow = SDL_GetWindowFromID( uiID );
-
-		if( pWindow )
-			return pWindow;
-	}
-
-	return nullptr;
 }
 
 bool CEngine::CreateGameWindow()

@@ -37,6 +37,7 @@ add_sources(
 	SteamWrapper.cpp
 )
 
+add_subdirectory( ${CMAKE_SOURCE_DIR}/external/HL_SDK/public HL_SDK/public )
 add_subdirectory( ${CMAKE_SOURCE_DIR}/external/SOURCE_SDK/src/public/steam public/steam )
 add_subdirectory( ${CMAKE_SOURCE_DIR}/external/VGUI1/include VGUI1_include )
 add_subdirectory( ${CMAKE_SOURCE_DIR}/src/common common )
@@ -102,17 +103,15 @@ target_link_libraries( Engine
 
 #CMake places libraries in /Debug or /Release on Windows, so explicitly set the paths for both.
 #On Linux, it uses LIBRARY_OUTPUT_DIRECTORY
-#The engine is always in cl_dlls, since the client is always loaded from there, while liblist.gam points to it to match files.
 set_target_properties( Engine PROPERTIES
-	LIBRARY_OUTPUT_DIRECTORY "${GAME_BASE_PATH}/cl_dlls"
-	RUNTIME_OUTPUT_DIRECTORY_DEBUG "${GAME_BASE_PATH}/cl_dlls"
-	RUNTIME_OUTPUT_DIRECTORY_RELEASE "${GAME_BASE_PATH}/cl_dlls"
+	LIBRARY_OUTPUT_DIRECTORY "${GAME_TOOL_PATH}"
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG "${GAME_TOOL_PATH}"
+	RUNTIME_OUTPUT_DIRECTORY_RELEASE "${GAME_TOOL_PATH}"
 )
 
 if( WIN32 AND MSVC )
 	#Set Windows subsystem
-	#Add the module definition file. Needed for GiveFnptrsToDll function export.
-	set( ENGINE_LINK_FLAGS "/SUBSYSTEM:WINDOWS /DEF:${CMAKE_CURRENT_SOURCE_DIR}/client.def /DELAYLOAD:Tier1.dll" )
+	set( ENGINE_LINK_FLAGS "/SUBSYSTEM:WINDOWS /DELAYLOAD:Tier1.dll" )
 else()
 	set( ENGINE_LINK_FLAGS "" )
 endif()
@@ -123,10 +122,6 @@ set_target_properties( Engine
 
 #No lib prefix
 set_target_properties( Engine PROPERTIES PREFIX "" )
-
-#Needs to be named client so the original engine can load it.
-#TODO: make a library that acts as a thunk to the real engine library.
-set_target_properties( Engine PROPERTIES OUTPUT_NAME "client" )
 
 #Create filters
 create_source_groups( "${CMAKE_SOURCE_DIR}" )

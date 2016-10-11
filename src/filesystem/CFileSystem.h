@@ -120,7 +120,7 @@ public:
 
 	char			*ReadLine( char *pOutput, int maxChars, FileHandle_t file ) override;
 
-	int				FPrintf( FileHandle_t file, char *pFormat, ... ) override;
+	int				FPrintf( FileHandle_t file, const char *pFormat, ... ) override;
 
 	// direct filesystem buffer access
 	void			*GetReadBuffer( FileHandle_t file, int *outBufferSize, bool failIfNotInCache ) override;

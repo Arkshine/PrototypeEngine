@@ -444,27 +444,13 @@ char *CFileSystem::ReadLine( char *pOutput, int maxChars, FileHandle_t file )
 	return fgets( pOutput, maxChars, pFile->GetFile() );
 }
 
-int CFileSystem::FPrintf( FileHandle_t file, char *pFormat, ... )
+int CFileSystem::FPrintf( FileHandle_t file, const char *pFormat, ... )
 {
-	auto pFile = reinterpret_cast<CFileHandle*>( file );
-
-	if( !pFile )
-	{
-		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::FPrint: Attempted to format print to null file handle!\n" );
-		return 0;
-	}
-
-	if( !pFile->IsOpen() )
-	{
-		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::FPrintf: Attempted to format print to handle with null file pointer!\n" );
-		return 0;
-	}
-
 	va_list list;
 
 	va_start( list, pFormat );
 
-	const auto result = vfprintf( pFile->GetFile(), pFormat, list );
+	const auto result = VFPrintf( file, pFormat, list );
 
 	va_end( list );
 

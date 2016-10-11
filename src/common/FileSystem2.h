@@ -1,6 +1,7 @@
 #ifndef COMMON_FILESYSTEM2_H
 #define COMMON_FILESYSTEM2_H
 
+#include <cstdarg>
 #include <cstddef>
 #include <cstdint>
 
@@ -66,6 +67,15 @@ public:
 	*	@see FileTimeToString
 	*/
 	virtual void			FileTimeToStringEx( char* pStrip, int maxCharsIncludingTerminator, int64_t fileTime ) = 0;
+
+	/**
+	*	Print formatted data to the file.
+	*	@param file Handle to the file.
+	*	@param pFormat Format string.
+	*	@param list va_list that points to the arguments.
+	*	@return If the operation succeeded, returns the number of characters that were written. Otherwise, returns a negative number.
+	*/
+	virtual int				VFPrintf( FileHandle_t file, const char *pFormat, va_list list )  = 0;
 
 	/**
 	*	Extended version of FindFirst.

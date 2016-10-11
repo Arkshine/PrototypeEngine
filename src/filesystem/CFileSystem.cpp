@@ -1096,6 +1096,27 @@ void CFileSystem::FileTimeToStringEx( char* pStrip, int maxCharsIncludingTermina
 	pStrip[ maxCharsIncludingTerminator - 1 ] = '\0';
 }
 
+int CFileSystem::VFPrintf( FileHandle_t file, const char *pFormat, va_list list )
+{
+	auto pFile = reinterpret_cast<CFileHandle*>( file );
+
+	if( !pFile )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::FPrint: Attempted to format print to null file handle!\n" );
+		return 0;
+	}
+
+	if( !pFile->IsOpen() )
+	{
+		Warning( FILESYSTEM_WARNING_CRITICAL, "CFileSystem::FPrintf: Attempted to format print to handle with null file pointer!\n" );
+		return 0;
+	}
+
+	const auto result = vfprintf( pFile->GetFile(), pFormat, list );
+
+	return result;
+}
+
 const char *CFileSystem::FindFirstEx( const char *pWildCard, FileFindHandle_t *pHandle, FileSystemFindFlags_t flags, const char *pathID )
 {
 	if( !pWildCard || !pHandle )

@@ -1,5 +1,9 @@
 #include "Common.h"
 #include "FilePaths.h"
+
+//Must be included before FileSystem2.h because conflicting steamtypes.h headers exist. - Solokiller
+#include "steam_api.h"
+
 #include "FileSystem2.h"
 #include "Logging.h"
 #include "IMetaTool.h"
@@ -61,6 +65,12 @@ void CMetaLoader::Run( const bool bIsListenServer )
 
 bool CMetaLoader::RunLoader()
 {
+	//TODO: until we can draw the console onscreen, use a console window. - Solokiller
+#ifdef WIN32
+	AllocConsole();
+	freopen( "CONOUT$", "w", stdout );
+#endif
+
 	if( !( *m_szGameDir ) )
 	{
 		UTIL_ShowMessageBox( "No game directory set", "Error", LogType::ERROR );
@@ -70,6 +80,9 @@ bool CMetaLoader::RunLoader()
 	//Must be done before setting the working directory to prevent library load failure. - Solokiller
 	if( !Steam_InitWrappers() )
 		return false;
+
+	//Shut down the older API so tools can safely use the newer one.
+	SteamAPI_Shutdown();
 
 	//Set the working directory to the game directory that the engine is running in.
 	//Needed so asset loading works. Note that any mods that rely on ./valve to exist will break. - Solokiller
@@ -101,12 +114,6 @@ bool CMetaLoader::RunLoader()
 		if( !GetCommandLine()->Initialize( iArgC, ppszArgV, STRIP_COMMANDS ) )
 			return false;
 	}
-
-	//TODO: until we can draw the console onscreen, use a console window. - Solokiller
-#ifdef WIN32
-	AllocConsole();
-	freopen( "CONOUT$", "w", stdout );
-#endif
 
 	if( GetCommandLine()->GetValue( "-dumpcmdline" ) )
 	{

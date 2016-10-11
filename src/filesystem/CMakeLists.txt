@@ -7,6 +7,7 @@ include_directories(
 	${CMAKE_SOURCE_DIR}/src/common
 	${CMAKE_SOURCE_DIR}/external/HL_SDK/common
 	${CMAKE_SOURCE_DIR}/external/HL_SDK/public
+	${CMAKE_SOURCE_DIR}/external/SOURCE_SDK/src/public/steam
 	${CMAKE_SOURCE_DIR}/external/SDL2/include
 )
 

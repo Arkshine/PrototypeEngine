@@ -5,7 +5,7 @@
 #ifndef ARCHTYPES_H
 #define ARCHTYPES_H
 
-#include "steam/steamtypes.h"
+#include "steamtypes.h"
 
 #ifndef _WIN32
 #define MAX_PATH PATH_MAX

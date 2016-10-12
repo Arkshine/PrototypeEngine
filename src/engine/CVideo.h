@@ -5,25 +5,54 @@
 
 class CEngine;
 
+/**
+*	Manages video functionality.
+*/
 class CVideo final
 {
 public:
 	CVideo() = default;
 
+	/**
+	*	@return The width of the main window.
+	*/
 	unsigned int GetWidth() const { return m_iWidth; }
 
+	/**
+	*	@return The height of the main window.
+	*/
 	unsigned int GetHeight() const { return m_iHeight; }
 
+	/**
+	*	@return The X scale to use when scaling images for resolution dependent usage.
+	*/
 	float GetXScale() const { return m_flXScale; }
 
+	/**
+	*	@return The Y scale to use when scaling images for resolution dependent usage.
+	*/
 	float GetYScale() const { return m_flYScale; }
 
+	/**
+	*	@return The main window.
+	*/
 	SDL_Window* GetWindow() { return m_pWindow; }
 
+	/**
+	*	Initializes the video system.
+	*	@return Whether initialization succeeded.
+	*/
 	bool Initialize();
 
+	/**
+	*	Shuts down the video system.
+	*/
 	void Shutdown();
 
+	/**
+	*	Runs the main loop. Calls engine.RunFrame every frame.
+	*	@return Whether the loop completed successfully.
+	*/
 	bool Run( CEngine& engine );
 
 private:

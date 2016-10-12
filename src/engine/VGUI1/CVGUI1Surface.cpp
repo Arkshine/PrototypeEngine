@@ -188,7 +188,7 @@ void CVGUI1Surface::swapBuffers()
 {
 	glFinish();
 
-	SDL_GL_SwapWindow( g_Engine.GetWindow() );
+	SDL_GL_SwapWindow( g_Video.GetWindow() );
 }
 
 void CVGUI1Surface::pushMakeCurrent( vgui::Panel* panel, bool useInsets )

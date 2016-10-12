@@ -57,11 +57,11 @@ void RDBitmapTGA::drawTexturedRect( int x0, int y0, int x1, int y1 )
 
 int RDBitmapTGA::ScaleX( int iX ) const
 {
-	return static_cast<int>( ceil( iX * g_Engine.GetXScale() * m_flXScale ) );
+	return static_cast<int>( ceil( iX * g_Video.GetXScale() * m_flXScale ) );
 }
 
 int RDBitmapTGA::ScaleY( int iY ) const
 {
-	return static_cast<int>( ceil( iY * g_Engine.GetYScale() * m_flYScale ) );
+	return static_cast<int>( ceil( iY * g_Video.GetYScale() * m_flYScale ) );
 }
 }

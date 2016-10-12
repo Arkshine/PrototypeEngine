@@ -1,8 +1,6 @@
 #ifndef ENGINE_CENGINE_H
 #define ENGINE_CENGINE_H
 
-#include <SDL2/SDL.h>
-
 #include "Platform.h"
 
 #include "lib/CLibrary.h"
@@ -25,15 +23,7 @@ public:
 	*/
 	const char* GetMyGameDir() const { return m_szMyGameDir; }
 
-	unsigned int GetWidth() const { return m_iWidth; }
-
-	unsigned int GetHeight() const { return m_iHeight; }
-
-	float GetXScale() const { return m_flXScale; }
-
-	float GetYScale() const { return m_flYScale; }
-
-	SDL_Window* GetWindow() { return m_pWindow; }
+	IMetaLoader* GetLoader() { return m_pLoader; }
 
 	void SetMyGameDir( const char* const pszGameDir );
 
@@ -43,32 +33,25 @@ public:
 
 	void Shutdown() override;
 
-private:
-	bool CreateGameWindow();
+	void RunFrame();
 
+private:
 	bool HostInit();
 
 	void CreateMainMenuBackground();
 
+	void RenderFrame();
+
+	void RenderVGUI1();
+
 private:
 	char m_szMyGameDir[ MAX_PATH ] = {};
-
-	unsigned int m_iWidth = 640;
-	unsigned int m_iHeight = 480;
-
-	float m_flXScale = 1;
-	float m_flYScale = 1;
 
 	IMetaLoader* m_pLoader = nullptr;
 
 	CLibrary m_steam_api;
 
 	bool m_bSteamAPIInitialized = false;
-
-	SDL_Window* m_pEngineWindow = nullptr;
-	SDL_Window* m_pWindow = nullptr;
-
-	SDL_GLContext m_hGLContext = nullptr;
 
 	vgui::Panel* m_pRootPanel = nullptr;
 

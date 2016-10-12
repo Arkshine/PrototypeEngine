@@ -8,6 +8,8 @@ cvar::CCVarSystem g_CVar;
 
 CEngine g_Engine;
 
+CVideo g_Video;
+
 //Constructor self registers itself for retrieval with vgui::App::getInstance.
 static CVGUI1App g_VGUI1App;
 

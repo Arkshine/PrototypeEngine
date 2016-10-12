@@ -16,7 +16,6 @@
 #include "Common.h"
 #include "Engine.h"
 #include "FilePaths.h"
-#include "GLUtils.h"
 #include "IMetaLoader.h"
 #include "interface.h"
 #include "Logging.h"
@@ -114,10 +113,9 @@ bool CEngine::Startup( IMetaLoader& loader, CreateInterfaceFn* pFactories, const
 		memcpy( pFileSystem, &wrapper, sizeof( IFileSystem ) );
 	}
 
-	if( m_pLoader->IsListenServer() )
+	if( !g_Video.Initialize() )
 	{
-		if( !CreateGameWindow() )
-			return false;
+		return false;
 	}
 
 	Msg( "HostInit\n" );
@@ -133,74 +131,12 @@ bool CEngine::Startup( IMetaLoader& loader, CreateInterfaceFn* pFactories, const
 
 bool CEngine::Run()
 {
-	glEnable( GL_TEXTURE_2D );
-
-	bool bQuit = false;
-
-	SDL_Event event;
-
-	while( !bQuit )
-	{
-		while( SDL_PollEvent( &event ) )
-		{
-			if( event.type == SDL_WINDOWEVENT )
-			{
-				//Close if the main window receives a close request.
-				if( event.window.event == SDL_WINDOWEVENT_CLOSE )
-				{
-					if( SDL_GetWindowID( m_pWindow ) == event.window.windowID )
-					{
-						bQuit = true;
-					}
-				}
-			}
-		}
-
-		glClearColor( 0, 0, 0, 1 );
-
-		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
-		glViewport( 0, 0, m_iWidth, m_iHeight );
-
-		glMatrixMode( GL_PROJECTION );
-		glLoadIdentity();
-
-		glOrtho( 0.0f, ( float ) m_iWidth, ( float ) m_iHeight, 0.0f, 1.0f, -1.0f );
-
-		glMatrixMode( GL_MODELVIEW );
-		glPushMatrix();
-		glLoadIdentity();
-
-		glDisable( GL_CULL_FACE );
-		glDisable( GL_BLEND );
-		glDisable( GL_DEPTH_TEST );
-		glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
-		glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-
-		vgui::App::getInstance()->externalTick();
-		m_pRootPanel->repaintAll();
-		m_pRootPanel->paintTraverse();
-
-		//g_pVGUI1Surface->swapBuffers();
-
-		glPopMatrix();
-	}
-
-	return true;
+	return g_Video.Run( *this );
 }
 
 void CEngine::Shutdown()
 {
-	if( m_pLoader->IsListenServer() )
-	{
-		if( m_pWindow )
-		{
-			SDL_DestroyWindow( m_pWindow );
-			m_pWindow = nullptr;
-		}
-
-		//SDL_Quit is handled by the loader.
-	}
+	g_Video.Shutdown();
 
 	if( m_steam_api.IsLoaded() )
 	{
@@ -211,48 +147,9 @@ void CEngine::Shutdown()
 	}
 }
 
-bool CEngine::CreateGameWindow()
+void CEngine::RunFrame()
 {
-	Uint32 windowFlags = /*SDL_WINDOW_HIDDEN |*/ SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
-
-	if( GetCommandLine()->GetValue( "-noborder" ) )
-		windowFlags |= SDL_WINDOW_BORDERLESS;
-
-	//OpenGL 2.0 or newer. Shader support. - Solokiller
-	const int iGLMajor = 2;
-	const int iGLMinor = 0;
-
-	Msg( "Requested OpenGL version: %d.%d\n", iGLMajor, iGLMinor );
-
-	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, iGLMajor );
-	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, iGLMinor );
-
-	m_pWindow = SDL_CreateWindow( "Half-Life", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_iWidth, m_iHeight, windowFlags );
-
-	if( !m_pWindow )
-		return false;
-
-	m_flXScale = m_iWidth / 640.0f;
-	m_flYScale = m_iHeight / 480.0f;
-
-	SDL_RaiseWindow( m_pWindow );
-
-	m_hGLContext = SDL_GL_CreateContext( m_pWindow );
-
-	if( !m_hGLContext )
-	{
-		Msg( "Couldn't create OpenGL context\n" );
-		return false;
-	}
-
-	uint32_t uiMajor, uiMinor;
-
-	if( !gl::GetContextVersion( uiMajor, uiMinor ) )
-		return false;
-
-	Msg( "OpenGL context version: %u.%u\n", uiMajor, uiMinor );
-
-	return true;
+	RenderFrame();
 }
 
 bool CEngine::HostInit()
@@ -269,7 +166,7 @@ bool CEngine::HostInit()
 
 	pApp->reset();
 
-	m_pRootPanel = new vgui::Panel( 0, 0, m_iWidth, m_iHeight );
+	m_pRootPanel = new vgui::Panel( 0, 0, g_Video.GetWidth(), g_Video.GetHeight() );
 
 	m_pRootPanel->setPaintBorderEnabled( false );
 	m_pRootPanel->setPaintBackgroundEnabled( false );
@@ -298,8 +195,8 @@ void CEngine::CreateMainMenuBackground()
 
 	pBackground->setSize( wide, tall );
 
-	const float flXScale = m_iWidth / 800.0f;
-	const float flYScale = m_iHeight / 600.0f;
+	const float flXScale = g_Video.GetWidth() / 800.0f;
+	const float flYScale = g_Video.GetHeight() / 600.0f;
 	const int iXOffsetScale = static_cast<int>( ceil( 256 * flXScale ) );
 	const int iYOffsetScale = static_cast<int>( ceil( 256 * flYScale ) );
 
@@ -321,4 +218,41 @@ void CEngine::CreateMainMenuBackground()
 
 		pImagePanel->setPos( iXOffsetScale * ( uiIndex % 4 ), iYOffsetScale * ( uiIndex / 4 ) );
 	}
+}
+
+void CEngine::RenderFrame()
+{
+	RenderVGUI1();
+}
+
+void CEngine::RenderVGUI1()
+{
+	glClearColor( 0, 0, 0, 1 );
+
+	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+	glViewport( 0, 0, g_Video.GetWidth(), g_Video.GetHeight() );
+
+	glMatrixMode( GL_PROJECTION );
+	glLoadIdentity();
+
+	glOrtho( 0.0f, ( float ) g_Video.GetWidth(), ( float ) g_Video.GetHeight(), 0.0f, 1.0f, -1.0f );
+
+	glMatrixMode( GL_MODELVIEW );
+	glPushMatrix();
+	glLoadIdentity();
+
+	glDisable( GL_CULL_FACE );
+	glDisable( GL_BLEND );
+	glDisable( GL_DEPTH_TEST );
+	glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
+	glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+
+	vgui::App::getInstance()->externalTick();
+	m_pRootPanel->repaintAll();
+	m_pRootPanel->paintTraverse();
+
+	//g_pVGUI1Surface->swapBuffers();
+
+	glPopMatrix();
 }

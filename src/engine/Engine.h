@@ -4,6 +4,7 @@
 #include "steam_api.h"
 
 #include "CEngine.h"
+#include "CVideo.h"
 
 #include "console/CCommandBuffer.h"
 #include "console/CCVarSystem.h"
@@ -19,6 +20,8 @@ extern CCommandBuffer g_CommandBuffer;
 extern cvar::CCVarSystem g_CVar;
 
 extern CEngine g_Engine;
+
+extern CVideo g_Video;
 
 extern CVGUI1Surface* g_pVGUI1Surface;
 

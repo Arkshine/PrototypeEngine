@@ -28,6 +28,8 @@ add_sources(
 	CEngine.cpp
 	CFileSystemWrapper.h
 	CFileSystemWrapper.cpp
+	CVideo.h
+	CVideo.cpp
 	Engine.h
 	Engine.cpp
 	EngineInterface.h

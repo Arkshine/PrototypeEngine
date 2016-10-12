@@ -114,11 +114,6 @@ bool CEngine::Startup( IMetaLoader& loader, CreateInterfaceFn* pFactories, const
 		memcpy( pFileSystem, &wrapper, sizeof( IFileSystem ) );
 	}
 
-	return true;
-}
-
-bool CEngine::Run()
-{
 	if( m_pLoader->IsListenServer() )
 	{
 		if( !CreateGameWindow() )
@@ -127,64 +122,68 @@ bool CEngine::Run()
 
 	Msg( "HostInit\n" );
 
+	if( !HostInit() )
+	{
+		UTIL_ShowMessageBox( "Error initializing host", "Fatal Error", LogType::ERROR );
+		return false;
+	}
+
+	return true;
+}
+
+bool CEngine::Run()
+{
 	glEnable( GL_TEXTURE_2D );
 
-	if( HostInit() )
+	bool bQuit = false;
+
+	SDL_Event event;
+
+	while( !bQuit )
 	{
-		bool bQuit = false;
-
-		SDL_Event event;
-
-		while( !bQuit )
+		while( SDL_PollEvent( &event ) )
 		{
-			while( SDL_PollEvent( &event ) )
+			if( event.type == SDL_WINDOWEVENT )
 			{
-				if( event.type == SDL_WINDOWEVENT )
+				//Close if the main window receives a close request.
+				if( event.window.event == SDL_WINDOWEVENT_CLOSE )
 				{
-					//Close if the main window receives a close request.
-					if( event.window.event == SDL_WINDOWEVENT_CLOSE )
+					if( SDL_GetWindowID( m_pWindow ) == event.window.windowID )
 					{
-						if( SDL_GetWindowID( m_pWindow ) == event.window.windowID )
-						{
-							bQuit = true;
-						}
+						bQuit = true;
 					}
 				}
 			}
-
-			glClearColor( 0, 0, 0, 1 );
-
-			glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
-			glViewport( 0, 0, m_iWidth, m_iHeight );
-
-			glMatrixMode( GL_PROJECTION );
-			glLoadIdentity();
-
-			glOrtho( 0.0f, ( float ) m_iWidth, ( float ) m_iHeight, 0.0f, 1.0f, -1.0f );
-
-			glMatrixMode( GL_MODELVIEW );
-			glPushMatrix();
-			glLoadIdentity();
-
-			glDisable( GL_CULL_FACE );
-			glDisable( GL_BLEND );
-			glDisable( GL_DEPTH_TEST );
-			glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
-			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-
-			vgui::App::getInstance()->externalTick();
-			m_pRootPanel->repaintAll();
-			m_pRootPanel->paintTraverse();
-
-			//g_pVGUI1Surface->swapBuffers();
-
-			glPopMatrix();
 		}
-	}
-	else
-	{
-		UTIL_ShowMessageBox( "Error initializing host", "Fatal Error", LogType::ERROR );
+
+		glClearColor( 0, 0, 0, 1 );
+
+		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+		glViewport( 0, 0, m_iWidth, m_iHeight );
+
+		glMatrixMode( GL_PROJECTION );
+		glLoadIdentity();
+
+		glOrtho( 0.0f, ( float ) m_iWidth, ( float ) m_iHeight, 0.0f, 1.0f, -1.0f );
+
+		glMatrixMode( GL_MODELVIEW );
+		glPushMatrix();
+		glLoadIdentity();
+
+		glDisable( GL_CULL_FACE );
+		glDisable( GL_BLEND );
+		glDisable( GL_DEPTH_TEST );
+		glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
+		glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+
+		vgui::App::getInstance()->externalTick();
+		m_pRootPanel->repaintAll();
+		m_pRootPanel->paintTraverse();
+
+		//g_pVGUI1Surface->swapBuffers();
+
+		glPopMatrix();
 	}
 
 	return true;

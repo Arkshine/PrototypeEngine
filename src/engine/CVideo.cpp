@@ -22,6 +22,12 @@ void CVideo::Shutdown()
 {
 	if( g_Engine.GetLoader()->IsListenServer() )
 	{
+		if( m_hGLContext )
+		{
+			SDL_GL_DeleteContext( m_hGLContext );
+			m_hGLContext = nullptr;
+		}
+
 		if( m_pWindow )
 		{
 			SDL_DestroyWindow( m_pWindow );
